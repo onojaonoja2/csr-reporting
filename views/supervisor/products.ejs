@@ -1,0 +1,52 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Products</h2>
+    <% if (success) { %>
+      <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+    <% } %>
+    <div class="card mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-brand">All Products</h3>
+        <a href="/supervisor/products/create" class="btn-primary text-sm">+ New Product</a>
+      </div>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>ID</th>
+            <th>Product Name</th>
+            <th>Grammage</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% products.forEach(p => { %>
+          <tr class="hover:bg-surface">
+            <td><%= p.id %></td>
+            <td class="font-medium"><%= p.name %></td>
+            <td><%= p.grammage %></td>
+            <td>
+              <% if (p.isActive) { %>
+                <span class="text-green-600 text-xs font-semibold">Active</span>
+              <% } else { %>
+                <span class="text-red-600 text-xs font-semibold">Inactive</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (p.isActive) { %>
+                <form action="/supervisor/products/<%= p.id %>/delete" method="POST" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="text-red-600 text-xs hover:underline" onclick="return confirm('Deactivate this product?')">Deactivate</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

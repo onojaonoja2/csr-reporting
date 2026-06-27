@@ -1,0 +1,44 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Aggregate Sales View</h2>
+    <% if (allData.length === 0) { %>
+      <div class="card text-center py-8 text-secondary">No sales data available</div>
+    <% } %>
+    <% allData.forEach(day => { %>
+    <div class="card mb-6">
+      <h3 class="font-semibold text-brand mb-4"><%= day.date %></h3>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR</th>
+            <th>Phone</th>
+            <th>State</th>
+            <th>Present</th>
+            <th>Products</th>
+            <th>Total Value (&#8358;)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% day.entries.forEach(e => { %>
+          <tr class="hover:bg-surface text-sm">
+            <td class="font-medium"><%= e.csrName %></td>
+            <td><%= e.phoneNumber || 'N/A' %></td>
+            <td><%= e.state || 'N/A' %></td>
+            <td><%= e.isPresent ? 'Yes' : 'No' %></td>
+            <td>
+              <% e.items.forEach(item => { %>
+                <div><%= item.productName %> (<%= item.productGrammage %>): <%= item.quantity %> x &#8358;<%= item.unitPrice.toLocaleString() %></div>
+              <% }) %>
+            </td>
+            <td class="font-semibold"><%= e.totalValue.toLocaleString() %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% }) %>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,53 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Payment History</h2>
+    <% months.forEach(month => { %>
+    <div class="card mb-6">
+      <h3 class="font-semibold text-brand mb-4"><%= new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' }) %></h3>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR Name</th>
+            <th>Phone</th>
+            <th>State</th>
+            <th>Target (&#8358;)</th>
+            <th>Sales (&#8358;)</th>
+            <th>% Target</th>
+            <th>Earned Pay (&#8358;)</th>
+            <th>Confirmed By</th>
+            <th>Confirmed At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% history.filter(h => h.month === month).forEach(h => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= h.csrName %></td>
+            <td><%= h.phoneNumber || '' %></td>
+            <td><%= h.state || '' %></td>
+            <td><%= h.target.toLocaleString() %></td>
+            <td class="font-semibold"><%= h.totalSales.toLocaleString() %></td>
+            <td><span class="font-bold <%= h.percentTarget >= 100 ? 'text-green-600' : h.percentTarget >= 50 ? 'text-yellow-600' : 'text-red-600' %>"><%= h.percentTarget %>%</span></td>
+            <td class="font-bold text-brand">&#8358;<%= h.earnedPay.toLocaleString() %></td>
+            <td><%= h.confirmedByName || 'N/A' %></td>
+            <td class="text-sm text-secondary"><%= new Date(h.confirmedAt).toLocaleDateString() %></td>
+          </tr>
+          <% }) %>
+          <tr class="bg-gray-50 font-semibold">
+            <td colspan="4" class="text-right">Total:</td>
+            <td>&#8358;<%= history.filter(h => h.month === month).reduce((s, h) => s + h.totalSales, 0).toLocaleString() %></td>
+            <td></td>
+            <td>&#8358;<%= history.filter(h => h.month === month).reduce((s, h) => s + h.earnedPay, 0).toLocaleString() %></td>
+            <td colspan="2"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <% }) %>
+    <% if (months.length === 0) { %>
+      <div class="card text-center py-8 text-secondary">No payment history yet</div>
+    <% } %>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,56 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-brand">User Management</h2>
+        <p class="text-secondary text-sm mt-1">Manage all system users and their access levels</p>
+      </div>
+      <a href="/admin/users/create" class="btn-primary">+ Create User</a>
+    </div>
+    <div class="card overflow-x-auto">
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Zone</th>
+            <th>State</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(u => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= u.fullName %></td>
+            <td><%= u.email %></td>
+            <td><%= u.phoneNumber || '-' %></td>
+            <td><span class="text-xs bg-brand text-white px-2 py-1 rounded-full uppercase"><%= u.role %></span></td>
+            <td><%= u.zone %></td>
+            <td><%= u.state %></td>
+            <td>
+              <% if (u.isActive) { %>
+                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Active</span>
+              <% } else { %>
+                <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Inactive</span>
+              <% } %>
+            </td>
+            <td class="space-x-2">
+              <a href="/admin/users/<%= u.id %>/edit" class="text-brand hover:underline text-sm font-medium">Edit</a>
+              <form action="/admin/users/<%= u.id %>/delete" method="POST" class="inline" onsubmit="return confirm('Delete this user?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="text-red-600 hover:underline text-sm font-medium">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

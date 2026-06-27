@@ -1,0 +1,63 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Removed CSRs</h2>
+    <div class="card">
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR Name</th>
+            <th>Phone</th>
+            <th>State</th>
+            <th>Removed By</th>
+            <th>Removed At</th>
+            <th>Removed Month</th>
+            <th>Sales (&#8358;)</th>
+            <th>Earned Pay (&#8358;)</th>
+            <th>Outstanding (&#8358;)</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% removedCsrs.forEach(c => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= c.fullName %></td>
+            <td><%= c.phoneNumber || 'N/A' %></td>
+            <td><%= c.state || 'N/A' %></td>
+            <td><%= c.removedByName || 'N/A' %></td>
+            <td class="text-sm"><%= new Date(c.removedAt).toLocaleDateString() %></td>
+            <td><%= c.removedMonth %></td>
+            <td>&#8358;<%= (c.lastMonthSales || 0).toLocaleString() %></td>
+            <td class="font-semibold">&#8358;<%= c.earnedPay.toLocaleString() %></td>
+            <td class="font-bold <%= c.outstanding > 0 ? 'text-red-600' : 'text-green-600' %>">
+              &#8358;<%= c.outstanding.toLocaleString() %>
+            </td>
+            <td>
+              <% if (c.isPaid) { %>
+                <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700 font-semibold">Paid</span>
+              <% } else { %>
+                <span class="text-xs px-2 py-1 rounded bg-red-100 text-red-700 font-semibold">Unpaid</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (!c.isPaid && c.outstanding > 0) { %>
+              <form action="/manager/payment/confirm/<%= c.id %>" method="POST" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="month" value="<%= c.removedMonth %>">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-3 rounded" onclick="return confirm('Mark payment of &#8358;<%= c.earnedPay.toLocaleString() %> as paid for <%= c.fullName %>?')">Mark Paid</button>
+              </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (removedCsrs.length === 0) { %>
+          <tr><td colspan="11" class="text-center text-secondary py-4">No removed CSRs</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

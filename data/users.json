@@ -1,0 +1,71 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "password": "$2a$10$V5NrRLoGiklDTArfJ6bbOeWkpP94gZaIbTC8WAjpLkI3Jox5/Z89.",
+    "fullName": "System Administrator",
+    "role": "admin",
+    "zone": "North Central",
+    "state": "FCT",
+    "lga": "Abuja Municipal",
+    "isActive": true,
+    "theme": "light",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "username": "supervisor1",
+    "password": "$2a$10$V5NrRLoGiklDTArfJ6bbOeWkpP94gZaIbTC8WAjpLkI3Jox5/Z89.",
+    "fullName": "Grace Okonkwo",
+    "role": "supervisor",
+    "zone": "South East",
+    "state": "Enugu",
+    "lga": "Enugu North",
+    "isActive": true,
+    "theme": "light",
+    "createdAt": "2026-01-15T08:30:00.000Z"
+  },
+  {
+    "id": 3,
+    "username": "manager1",
+    "password": "$2a$10$V5NrRLoGiklDTArfJ6bbOeWkpP94gZaIbTC8WAjpLkI3Jox5/Z89.",
+    "fullName": "Emeka Nwosu",
+    "role": "manager",
+    "zone": "South South",
+    "state": "Rivers",
+    "lga": "Port Harcourt",
+    "isActive": true,
+    "theme": "light",
+    "createdAt": "2026-02-01T10:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "username": "csr1",
+    "password": "$2a$10$V5NrRLoGiklDTArfJ6bbOeWkpP94gZaIbTC8WAjpLkI3Jox5/Z89.",
+    "fullName": "Amina Bello",
+    "role": "csr",
+    "zone": "North West",
+    "state": "Kano",
+    "lga": "Kano Municipal",
+    "isActive": true,
+    "theme": "light",
+    "createdAt": "2026-03-10T09:00:00.000Z",
+    "basePay": 50000,
+    "perProductBonus": 50
+  },
+  {
+    "id": 5,
+    "username": "csr2",
+    "password": "$2a$10$V5NrRLoGiklDTArfJ6bbOeWkpP94gZaIbTC8WAjpLkI3Jox5/Z89.",
+    "fullName": "Tunde Adeyemi",
+    "role": "csr",
+    "zone": "South West",
+    "state": "Lagos",
+    "lga": "Ikeja",
+    "isActive": true,
+    "theme": "dark",
+    "createdAt": "2026-03-12T09:00:00.000Z",
+    "basePay": 50000,
+    "perProductBonus": 50
+  }
+]

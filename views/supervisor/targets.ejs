@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Sales Targets</h2>
+    <% if (success) { %>
+      <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+    <% } %>
+    <div class="card">
+      <h3 class="font-semibold text-brand mb-4">Set Targets per CSR</h3>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR Name</th>
+            <th>Zone</th>
+            <th>Daily Target</th>
+            <th>Weekly Target</th>
+            <th>Monthly Target</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% csrs.forEach(c => { %>
+            <% const t = targets[c.id] || { dailyTarget: 0, weeklyTarget: 0, monthlyTarget: 0 }; %>
+            <tr class="hover:bg-surface">
+              <form action="/supervisor/targets/<%= c.id %>" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <td class="font-medium"><%= c.fullName %></td>
+                <td><%= c.zone || '' %></td>
+                <td><input type="number" name="dailyTarget" value="<%= t.dailyTarget %>" min="0" class="form-input w-24"></td>
+                <td><input type="number" name="weeklyTarget" value="<%= t.weeklyTarget %>" min="0" class="form-input w-24"></td>
+                <td><input type="number" name="monthlyTarget" value="<%= t.monthlyTarget %>" min="0" class="form-input w-24"></td>
+                <td><button type="submit" class="btn-primary text-xs py-1 px-3">Save</button></td>
+              </form>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

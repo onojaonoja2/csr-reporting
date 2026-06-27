@@ -1,0 +1,6 @@
+node_modules/
+data/elkris.db
+data/elkris.db-shm
+data/elkris.db-wal
+.env
+0

@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "productName": "Elkris Premium Oats",
+    "grammage": "500g",
+    "currentStock": 1200,
+    "lastUpdated": "2026-06-01T08:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "productName": "Elkris Premium Oats",
+    "grammage": "1kg",
+    "currentStock": 800,
+    "lastUpdated": "2026-06-01T08:00:00.000Z"
+  },
+  {
+    "id": 3,
+    "productName": "Elkris Corn Flakes",
+    "grammage": "300g",
+    "currentStock": 1500,
+    "lastUpdated": "2026-06-01T08:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "productName": "Elkris Corn Flakes",
+    "grammage": "750g",
+    "currentStock": 600,
+    "lastUpdated": "2026-06-01T08:00:00.000Z"
+  },
+  {
+    "id": 5,
+    "productName": "Elkris Honey Wheat",
+    "grammage": "500g",
+    "currentStock": 950,
+    "lastUpdated": "2026-06-01T08:00:00.000Z"
+  }
+]

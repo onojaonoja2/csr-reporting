@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+<div class="flex">
+  <%- include('partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">My Profile</h2>
+    <div class="card max-w-2xl">
+      <% if (error) { %>
+        <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+      <% } %>
+      <div class="space-y-3 mb-6">
+        <div class="flex justify-between"><span class="font-medium">Name:</span><span><%= user.fullName %></span></div>
+        <div class="flex justify-between"><span class="font-medium">Email:</span><span><%= user.email %></span></div>
+        <div class="flex justify-between"><span class="font-medium">Role:</span><span class="capitalize"><%= user.role %></span></div>
+        <div class="flex justify-between"><span class="font-medium">Zone:</span><span><%= user.zone %></span></div>
+        <div class="flex justify-between"><span class="font-medium">State:</span><span><%= user.state %></span></div>
+        <div class="flex justify-between"><span class="font-medium">LGA:</span><span><%= user.lga %></span></div>
+      </div>
+      <hr class="border-brand opacity-30 mb-6">
+      <h4 class="font-semibold text-brand mb-4">Change Password</h4>
+      <form action="/profile" method="POST" class="space-y-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div>
+          <label class="block text-sm font-medium mb-1">Current Password</label>
+          <input type="password" name="currentPassword" class="form-input" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">New Password</label>
+          <input type="password" name="newPassword" class="form-input" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Confirm New Password</label>
+          <input type="password" name="confirmPassword" class="form-input" required>
+        </div>
+        <button type="submit" class="btn-primary">Update Password</button>
+      </form>
+    </div>
+  </main>
+</div>
+<%- include('partials/footer') %>

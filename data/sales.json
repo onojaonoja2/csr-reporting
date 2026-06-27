@@ -1,0 +1,24 @@
+{
+  "targets": [
+    { "csrId": 4, "dailyTarget": 50, "weeklyTarget": 250, "monthlyTarget": 1000 },
+    { "csrId": 5, "dailyTarget": 60, "weeklyTarget": 300, "monthlyTarget": 1200 }
+  ],
+  "entries": [
+    {
+      "id": 1,
+      "csrId": 4,
+      "date": "2026-06-01",
+      "unitsSold": 45,
+      "isPresent": true,
+      "loggedBy": 2
+    },
+    {
+      "id": 2,
+      "csrId": 5,
+      "date": "2026-06-01",
+      "unitsSold": 58,
+      "isPresent": true,
+      "loggedBy": 2
+    }
+  ]
+}

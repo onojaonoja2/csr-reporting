@@ -1,0 +1,91 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Target Tiers & CSR Assignment</h2>
+    <% if (success) { %>
+      <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+    <% } %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Create New Tier</h3>
+        <form action="/supervisor/tiers/create" method="POST" class="space-y-4">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div>
+            <label class="block text-sm font-medium mb-1">Tier Name</label>
+            <input type="text" name="name" class="form-input" placeholder="e.g., Tier 1 - Starter" required>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Monthly Target (&#8358;)</label>
+              <input type="number" name="monthlyTarget" class="form-input" min="0" placeholder="e.g., 500000" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Monthly Salary (&#8358;)</label>
+              <input type="number" name="monthlySalary" class="form-input" min="0" placeholder="e.g., 80000" required>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">Create Tier</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Assign CSRs to Tiers</h3>
+        <% csrs.forEach(c => { %>
+        <div class="flex items-center justify-between py-2 border-b last:border-0">
+          <span class="font-medium text-sm"><%= c.fullName %></span>
+          <form action="/supervisor/tiers/assign/<%= c.id %>" method="POST" class="flex items-center gap-2">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <select name="tierId" class="form-input text-sm py-1" onchange="this.form.submit()">
+              <option value="">-- Select Tier --</option>
+              <% tiers.forEach(t => { %>
+                <option value="<%= t.id %>" <%= assignments[c.id] === t.id ? 'selected' : '' %>><%= t.name %> (&#8358;<%= t.monthlyTarget.toLocaleString() %>)</option>
+              <% }) %>
+            </select>
+          </form>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="card mt-6">
+      <h3 class="font-semibold text-brand mb-4">Existing Tiers</h3>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>Tier Name</th>
+            <th>Monthly Target (&#8358;)</th>
+            <th>Monthly Salary (&#8358;)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tiers.forEach(t => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= t.name %></td>
+            <td><%= t.monthlyTarget.toLocaleString() %></td>
+            <td><%= t.monthlySalary.toLocaleString() %></td>
+            <td class="space-x-2">
+              <form action="/supervisor/tiers/<%= t.id %>/edit" method="POST" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="name" value="<%= t.name %>">
+                <input type="hidden" name="monthlyTarget" value="<%= t.monthlyTarget %>">
+                <input type="hidden" name="monthlySalary" value="<%= t.monthlySalary %>">
+              </form>
+              <form action="/supervisor/tiers/<%= t.id %>/delete" method="POST" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="text-red-600 text-xs hover:underline" onclick="return confirm('Delete this tier? CSRs assigned to it will be unassigned.')">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

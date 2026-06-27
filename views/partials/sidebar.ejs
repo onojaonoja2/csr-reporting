@@ -1,0 +1,35 @@
+<% if (user) { %>
+<aside class="w-64 bg-secondary min-h-[calc(100vh-3.5rem)] p-4 hidden lg:block">
+  <nav class="space-y-1">
+    <% if (user.role === 'admin') { %>
+      <a href="/admin/dashboard" class="sidebar-link <%= currentPath === '/admin/dashboard' ? 'active' : '' %>">Dashboard</a>
+      <a href="/admin/users/create" class="sidebar-link <%= currentPath === '/admin/users/create' ? 'active' : '' %>">Create User</a>
+      <a href="/admin/products" class="sidebar-link <%= currentPath === '/admin/products' || currentPath === '/admin/products/create' ? 'active' : '' %>">Products</a>
+    <% } %>
+    <% if (user.role === 'supervisor' || user.role === 'csr') { %>
+      <a href="/supervisor/dashboard" class="sidebar-link <%= currentPath === '/supervisor/dashboard' ? 'active' : '' %>">Sales Dashboard</a>
+      <a href="/supervisor/csr/create" class="sidebar-link <%= currentPath === '/supervisor/csr/create' ? 'active' : '' %>">Create CSR</a>
+      <a href="/supervisor/daily" class="sidebar-link <%= currentPath === '/supervisor/daily' ? 'active' : '' %>">Daily View</a>
+      <a href="/supervisor/previous" class="sidebar-link <%= currentPath === '/supervisor/previous' ? 'active' : '' %>">Previous Days</a>
+      <a href="/supervisor/weekly" class="sidebar-link <%= currentPath === '/supervisor/weekly' ? 'active' : '' %>">Weekly View</a>
+      <a href="/supervisor/monthly" class="sidebar-link <%= currentPath === '/supervisor/monthly' ? 'active' : '' %>">Monthly View</a>
+      <a href="/supervisor/inventory" class="sidebar-link <%= currentPath === '/supervisor/inventory' ? 'active' : '' %>">CSR Inventory</a>
+      <a href="/supervisor/products" class="sidebar-link <%= currentPath === '/supervisor/products' || currentPath === '/supervisor/products/create' ? 'active' : '' %>">Products</a>
+      <a href="/supervisor/tiers" class="sidebar-link <%= currentPath === '/supervisor/tiers' ? 'active' : '' %>">Target Tiers</a>
+      <a href="/supervisor/paytable" class="sidebar-link <%= currentPath === '/supervisor/paytable' ? 'active' : '' %>">Pay Table</a>
+      <a href="/supervisor/removed" class="sidebar-link <%= currentPath === '/supervisor/removed' ? 'active' : '' %>">Removed CSRs</a>
+    <% } %>
+    <% if (user.role === 'manager') { %>
+      <a href="/manager/dashboard" class="sidebar-link <%= currentPath === '/manager/dashboard' ? 'active' : '' %>">Payout Matrix</a>
+      <a href="/manager/daily" class="sidebar-link <%= currentPath === '/manager/daily' ? 'active' : '' %>">Daily View</a>
+      <a href="/manager/weekly" class="sidebar-link <%= currentPath === '/manager/weekly' ? 'active' : '' %>">Weekly View</a>
+      <a href="/manager/monthly" class="sidebar-link <%= currentPath === '/manager/monthly' ? 'active' : '' %>">Monthly View</a>
+      <a href="/manager/payment/history" class="sidebar-link <%= currentPath === '/manager/payment/history' ? 'active' : '' %>">Payment History</a>
+      <a href="/manager/removed" class="sidebar-link <%= currentPath === '/manager/removed' ? 'active' : '' %>">Removed CSRs</a>
+      <a href="/manager/aggregate" class="sidebar-link <%= currentPath === '/manager/aggregate' ? 'active' : '' %>">Aggregate View</a>
+    <% } %>
+    <hr class="my-3 border-brand opacity-30">
+    <a href="/profile" class="sidebar-link <%= currentPath === '/profile' ? 'active' : '' %>">My Profile</a>
+  </nav>
+</aside>
+<% } %>

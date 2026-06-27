@@ -1,0 +1,22 @@
+<%- include('partials/header') %>
+<div class="min-h-screen flex items-center justify-center bg-frame px-4">
+  <div class="w-full max-w-md">
+    <div class="card text-center">
+      <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-primary mb-2">Confirm Logout</h3>
+      <p class="text-secondary mb-6">Are you sure you want to log out, <strong><%= user ? user.fullName : 'User' %></strong>?</p>
+      <div class="flex gap-3 justify-center">
+        <a href="<%= user ? (user.role === 'admin' ? '/admin/dashboard' : user.role === 'manager' ? '/manager/dashboard' : '/supervisor/dashboard') : '/' %>" class="btn-primary bg-gray-500 hover:bg-gray-600">Cancel</a>
+        <form action="/logout" method="POST" class="inline">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn-primary bg-red-600 hover:bg-red-700">Yes, Logout</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

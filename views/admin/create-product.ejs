@@ -1,0 +1,28 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Create Product</h2>
+    <% if (error) { %>
+      <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+    <% } %>
+    <div class="card max-w-lg">
+      <form action="/admin/products/create" method="POST" class="space-y-4">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div>
+          <label class="block text-sm font-medium mb-1">Product Name</label>
+          <input type="text" name="name" class="form-input" placeholder="e.g., Elkris Premium Oats" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Grammage</label>
+          <input type="text" name="grammage" class="form-input" placeholder="e.g., 500g, 1kg" required>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="btn-primary">Create Product</button>
+          <a href="/admin/products" class="px-4 py-2 border rounded-lg text-sm hover:bg-surface">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,191 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Sales Dashboard</h2>
+    <% if (success) { %>
+      <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+    <% } %>
+
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-lg font-semibold">CSR Overview - <%= today %></h3>
+      <div class="flex gap-2">
+        <% if (!dayClosed) { %>
+        <form action="/supervisor/day/close" method="POST" onsubmit="return confirm('Close day for all CSRs? CSRs without entries will be marked absent.')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="date" value="<%= today %>">
+          <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded-lg">Close Day</button>
+        </form>
+        <% } else { %>
+          <span class="bg-green-100 text-green-700 text-sm font-medium py-2 px-4 rounded-lg">Day Closed</span>
+        <% } %>
+        <button type="button" onclick="document.getElementById('bulkPayDashForm2').submit()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg" onclick="return confirm('Pay selected CSRs for <%= today.substring(0, 7) %>?')">Pay Selected</button>
+      </div>
+    </div>
+
+    <form action="/supervisor/payment/bulk" method="POST" id="bulkPayDashForm2">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+        <% csrData.forEach(c => { %>
+        <div class="card">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex items-start gap-2">
+              <% if (!c.isPaid) { %>
+                <input type="checkbox" name="csrIds" value="<%= c.id %>" class="csr-check mt-1">
+              <% } %>
+              <div>
+                <h3 class="font-semibold text-brand"><%= c.fullName %></h3>
+                <p class="text-xs text-secondary"><%= c.phoneNumber || 'N/A' %> | <%= c.state || 'N/A' %></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"><%= c.tierName %></span>
+              <form action="/supervisor/csr/remove/<%= c.id %>" method="POST" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="text-red-500 text-xs hover:underline" onclick="return confirm('Remove <%= c.fullName %>? They will be offboarded.')">Remove</button>
+              </form>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm mb-3">
+            <div class="flex justify-between"><span class="text-secondary">Monthly Target:</span><span class="font-medium">&#8358;<%= c.target.toLocaleString() %></span></div>
+            <div class="flex justify-between"><span class="text-secondary">Sales This Month:</span><span class="font-medium">&#8358;<%= c.monthlySales.toLocaleString() %></span></div>
+            <div class="flex justify-between"><span class="text-secondary">% of Target:</span>
+              <span class="font-bold <%= c.percentTarget >= 100 ? 'text-green-600' : c.percentTarget >= 50 ? 'text-yellow-600' : 'text-red-600' %>"><%= c.percentTarget %>%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div class="h-2 rounded-full <%= c.percentTarget >= 100 ? 'bg-green-500' : c.percentTarget >= 50 ? 'bg-yellow-500' : 'bg-red-500' %>" style="width: <%= Math.min(c.percentTarget, 100) %>%"></div>
+            </div>
+          </div>
+          <div class="text-xs text-secondary border-t pt-2 flex justify-between">
+            <span>Today: <%= c.isPresent ? 'Present' : 'Not Logged' %></span>
+            <span>Inventory: <%= c.inventory.length %> products</span>
+            <% if (c.isPaid) { %>
+              <span class="text-green-600 font-semibold">Paid</span>
+            <% } else { %>
+              <form action="/supervisor/payment/confirm/<%= c.id %>" method="POST" class="inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
+                <button type="submit" class="text-green-600 hover:underline" onclick="return confirm('Confirm payment for <%= c.fullName %>?')">Confirm Pay</button>
+              </form>
+            <% } %>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </form>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Log Daily Sales</h3>
+        <form action="/supervisor/sales/log" method="POST" class="space-y-4">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div>
+            <label class="block text-sm font-medium mb-1">CSR / Stockist</label>
+            <select name="csrId" class="form-input" required id="csrSelect">
+              <option value="">Select CSR</option>
+              <% csrs.forEach(c => { %>
+                <option value="<%= c.id %>"><%= c.fullName %> (<%= c.phoneNumber || 'N/A' %>)</option>
+              <% }) %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Date</label>
+            <input type="date" name="date" class="form-input" required value="<%= today %>">
+          </div>
+          <div class="flex items-center gap-2 mb-2">
+            <input type="checkbox" name="isPresent" id="isPresent" class="w-4 h-4" checked>
+            <label for="isPresent" class="text-sm font-medium">CSR Present Today</label>
+          </div>
+          <div class="border rounded-lg p-3">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium">Products Sold</label>
+              <button type="button" onclick="addProductRow()" class="text-xs text-blue-600 hover:underline">+ Add Product</button>
+            </div>
+            <div id="productRows" class="space-y-2">
+              <div class="flex gap-2 items-end product-row">
+                <select name="productIds" class="form-input text-sm flex-1 product-select" required>
+                  <option value="">Select Product</option>
+                  <% products.forEach(p => { %>
+                    <option value="<%= p.id %>"><%= p.name %> (<%= p.grammage %>)</option>
+                  <% }) %>
+                </select>
+                <input type="number" name="quantities" min="1" class="form-input text-sm w-20 qty-input" placeholder="Qty" required>
+                <input type="number" name="unitPrices" min="0" class="form-input text-sm w-28 price-input" placeholder="Unit Price" required>
+                <input type="text" class="form-input text-sm w-28 value-display" readonly placeholder="Value">
+                <button type="button" onclick="removeProductRow(this)" class="text-red-500 hover:text-red-700 text-sm px-1">&times;</button>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">Log Entry</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Today's Entries</h3>
+        <div class="max-h-80 overflow-y-auto">
+          <table>
+            <thead>
+              <tr class="text-xs text-secondary border-b">
+                <th>CSR</th>
+                <th>Phone</th>
+                <th>State</th>
+                <th>Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% csrData.forEach(c => { %>
+              <tr class="text-sm">
+                <td class="font-medium"><%= c.fullName %></td>
+                <td><%= c.phoneNumber || 'N/A' %></td>
+                <td><%= c.state || 'N/A' %></td>
+                <td>
+                  <% if (c.isPresent) { %>
+                    <span class="text-green-600">Yes</span>
+                    <% if (c.todayItems.length > 0) { %>
+                      <div class="text-xs text-secondary mt-1">
+                        <% c.todayItems.forEach(item => { %>
+                          <div><%= item.productName %> (<%= item.productGrammage %>): <%= item.quantity %> x &#8358;<%= item.unitPrice.toLocaleString() %> = &#8358;<%= item.salesValue.toLocaleString() %></div>
+                        <% }) %>
+                        <div class="font-semibold">Total: &#8358;<%= c.todayValue.toLocaleString() %></div>
+                      </div>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-red-600">No</span>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+let rowIndex = 1;
+function addProductRow() {
+  const products = `<%= products.map(p => '<option value="'+p.id+'">'+p.name+' ('+p.grammage+')</option>').join('') %>`;
+  const html = '<div class="flex gap-2 items-end product-row"><select name="productIds" class="form-input text-sm flex-1 product-select" required><option value="">Select Product</option>' + products + '</select><input type="number" name="quantities" min="1" class="form-input text-sm w-20 qty-input" placeholder="Qty" required><input type="number" name="unitPrices" min="0" class="form-input text-sm w-28 price-input" placeholder="Unit Price" required><input type="text" class="form-input text-sm w-28 value-display" readonly placeholder="Value"><button type="button" onclick="removeProductRow(this)" class="text-red-500 hover:text-red-700 text-sm px-1">&times;</button></div>';
+  document.getElementById('productRows').insertAdjacentHTML('beforeend', html);
+  bindCalcEvents(document.querySelector('.product-row:last-child'));
+}
+function removeProductRow(btn) {
+  const rows = document.querySelectorAll('.product-row');
+  if (rows.length > 1) btn.closest('.product-row').remove();
+}
+function calcValue(row) {
+  const qty = parseInt(row.querySelector('.qty-input').value) || 0;
+  const price = parseInt(row.querySelector('.price-input').value) || 0;
+  row.querySelector('.value-display').value = qty * price > 0 ? '\u20A6' + (qty * price).toLocaleString() : '';
+}
+function bindCalcEvents(row) {
+  row.querySelector('.qty-input').addEventListener('input', function() { calcValue(row); });
+  row.querySelector('.price-input').addEventListener('input', function() { calcValue(row); });
+}
+document.querySelectorAll('.product-row').forEach(bindCalcEvents);
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,65 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">CSR Inventory</h2>
+    <div class="card mb-6">
+      <h3 class="font-semibold text-brand mb-4">Add Stock to CSR</h3>
+      <form action="/supervisor/inventory/add" method="POST" class="flex flex-wrap gap-4 items-end">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div>
+          <label class="block text-sm font-medium mb-1">CSR</label>
+          <select name="csrId" class="form-input" required>
+            <option value="">Select CSR</option>
+            <% csrs.forEach(c => { %>
+              <option value="<%= c.id %>"><%= c.fullName %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Product</label>
+          <select name="productId" class="form-input" required>
+            <option value="">Select Product</option>
+            <% products.forEach(p => { %>
+              <option value="<%= p.id %>"><%= p.name %> (<%= p.grammage %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Quantity</label>
+          <input type="number" name="quantity" min="1" class="form-input w-28" placeholder="Qty" required>
+        </div>
+        <button type="submit" class="btn-primary">Add Stock</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3 class="font-semibold text-brand mb-4">Current CSR Inventory</h3>
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR</th>
+            <th>Product</th>
+            <th>Grammage</th>
+            <th>Quantity</th>
+            <th>Last Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% inventory.forEach(inv => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= inv.csrName %></td>
+            <td><%= inv.productName %></td>
+            <td><%= inv.productGrammage %></td>
+            <td class="font-semibold"><%= inv.quantity %></td>
+            <td class="text-sm text-secondary"><%= new Date(inv.lastUpdated).toLocaleDateString() %></td>
+          </tr>
+          <% }) %>
+          <% if (inventory.length === 0) { %>
+          <tr><td colspan="5" class="text-center text-secondary py-4">No inventory records yet</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,89 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Monthly View - <%= monthName %></h2>
+    <div class="card mb-6">
+      <form action="/supervisor/monthly" method="GET" class="flex gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium mb-1">Select Month</label>
+          <input type="month" name="month" class="form-input" value="<%= month %>">
+        </div>
+        <button type="submit" class="btn-primary">View</button>
+      </form>
+    </div>
+    <form action="/supervisor/payment/bulk" method="POST" id="bulkPayForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="month" value="<%= month %>">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg" onclick="return confirm('Pay all selected CSRs for <%= monthName %>?')">Pay Selected</button>
+          <span class="text-sm text-secondary ml-3">Total Payroll: &#8358;<%= paidTotal.toLocaleString() %></span>
+        </div>
+        <label class="text-sm"><input type="checkbox" id="selectAll" class="mr-1"> Select All</label>
+      </div>
+      <div class="card overflow-x-auto">
+        <table>
+          <thead>
+            <tr class="bg-brand text-white">
+              <th><input type="checkbox" id="selectAllHead"></th>
+              <th>CSR Name</th>
+              <th>Phone</th>
+              <th>State</th>
+              <th>Tier</th>
+              <th>Target (&#8358;)</th>
+              <th>Salary (&#8358;)</th>
+              <th>Present</th>
+              <th>Units</th>
+              <th>Sales (&#8358;)</th>
+              <th>% Target</th>
+              <th>Earned (&#8358;)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% monthlyData.forEach(m => { %>
+            <tr class="hover:bg-surface">
+              <td>
+                <% if (!m.isPaid) { %>
+                  <input type="checkbox" name="csrIds" value="<%= m.id %>" class="csr-check">
+                <% } %>
+              </td>
+              <td class="font-medium"><%= m.fullName %></td>
+              <td><%= m.phoneNumber || '' %></td>
+              <td><%= m.state || '' %></td>
+              <td><span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"><%= m.tierName %></span></td>
+              <td><%= m.target.toLocaleString() %></td>
+              <td><%= m.baseSalary.toLocaleString() %></td>
+              <td><%= m.presentDays %></td>
+              <td><%= m.totalUnits %></td>
+              <td class="font-semibold"><%= m.totalSales.toLocaleString() %></td>
+              <td>
+                <span class="font-bold <%= m.percentTarget >= 100 ? 'text-green-600' : m.percentTarget >= 50 ? 'text-yellow-600' : 'text-red-600' %>"><%= m.percentTarget %>%</span>
+              </td>
+              <td class="font-bold text-brand">&#8358;<%= m.earnedPay.toLocaleString() %></td>
+              <td>
+                <% if (m.isPaid) { %>
+                  <span class="text-xs px-2 py-1 rounded bg-green-100 text-green-700">Paid</span>
+                <% } else { %>
+                  <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700">Unpaid</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </main>
+</div>
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+  document.querySelectorAll('.csr-check').forEach(c => { c.checked = this.checked; });
+});
+document.getElementById('selectAllHead').addEventListener('change', function() {
+  document.querySelectorAll('.csr-check').forEach(c => { c.checked = this.checked; });
+  document.getElementById('selectAll').checked = this.checked;
+});
+</script>
+<%- include('../partials/footer') %>

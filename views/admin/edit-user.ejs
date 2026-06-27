@@ -1,0 +1,124 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Edit User: <%= target.fullName %></h2>
+    <div class="card max-w-2xl">
+      <% if (error) { %>
+        <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 p-3 rounded-lg mb-4 text-sm"><%= success %></div>
+      <% } %>
+      <form action="/admin/users/<%= target.id %>/edit" method="POST" class="space-y-4" id="editUserForm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Full Name</label>
+            <input type="text" name="fullName" value="<%= target.fullName %>" required class="form-input">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Email</label>
+            <input type="email" name="email" value="<%= target.email %>" required class="form-input" placeholder="user@elkris.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Phone Number</label>
+            <input type="tel" name="phoneNumber" value="<%= target.phoneNumber || '' %>" pattern="[0-9]{11}" maxlength="11" class="form-input" placeholder="08012345678">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Role</label>
+            <select name="role" id="roleSelect" class="form-input">
+              <option value="csr" <%= target.role === 'csr' ? 'selected' : '' %>>CSR / Stockist</option>
+              <option value="supervisor" <%= target.role === 'supervisor' ? 'selected' : '' %>>Supervisor</option>
+              <option value="manager" <%= target.role === 'manager' ? 'selected' : '' %>>Manager</option>
+              <option value="admin" <%= target.role === 'admin' ? 'selected' : '' %>>Admin</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 mt-6">
+            <input type="checkbox" name="isActive" id="isActive" <%= target.isActive ? 'checked' : '' %> class="w-4 h-4">
+            <label for="isActive" class="text-sm font-medium">Active Account</label>
+          </div>
+        </div>
+        <div id="locationSection" class="space-y-4">
+          <hr class="border-brand opacity-30">
+          <h4 class="font-semibold text-brand">Location & Address</h4>
+          <div>
+            <label class="block text-sm font-medium mb-1">Address</label>
+            <input type="text" name="address" id="addressInput" value="<%= target.address || '' %>" class="form-input" placeholder="Street address, area...">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Geo-Political Zone</label>
+              <select name="zone" id="zoneSelect" class="form-input">
+                <option value="">Select Zone</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">State</label>
+              <select name="state" id="stateSelect" class="form-input">
+                <option value="">Select State</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">LGA</label>
+              <select name="lga" id="lgaSelect" class="form-input">
+                <option value="">Select LGA</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <hr class="border-brand opacity-30">
+        <h4 class="font-semibold text-red-600">Admin Password Override</h4>
+        <p class="text-sm text-secondary mb-2">Leave blank to keep current password. Enter a new value to force-reset.</p>
+        <div>
+          <label class="block text-sm font-medium mb-1">Force Reset Password</label>
+          <input type="password" name="forcedPassword" class="form-input" placeholder="New password (optional)">
+        </div>
+        <button type="submit" class="btn-primary">Save Changes</button>
+      </form>
+    </div>
+  </main>
+</div>
+<script>
+(async function() {
+  const roleSelect = document.getElementById('roleSelect');
+  const locationSection = document.getElementById('locationSection');
+  const zoneSel = document.getElementById('zoneSelect');
+  const stateSel = document.getElementById('stateSelect');
+  const lgaSel = document.getElementById('lgaSelect');
+
+  function toggleLocation() {
+    const isCsr = roleSelect.value === 'csr';
+    locationSection.style.display = isCsr ? '' : 'none';
+  }
+
+  roleSelect.addEventListener('change', toggleLocation);
+  toggleLocation();
+
+  const zones = ['North Central','North East','North West','South East','South South','South West'];
+  const currentZone = '<%= target.zone %>';
+  const currentState = '<%= target.state %>';
+  const currentLga = '<%= target.lga %>';
+  zones.forEach(z => { const o = document.createElement('option'); o.value = z; o.textContent = z; if(z===currentZone) o.selected = true; zoneSel.appendChild(o); });
+  async function loadStates(zone) {
+    stateSel.innerHTML = '<option value="">Select State</option>';
+    lgaSel.innerHTML = '<option value="">Select LGA</option>';
+    if (!zone) return;
+    const res = await fetch('/api/states/' + encodeURIComponent(zone));
+    const states = await res.json();
+    states.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; if(s===currentState) o.selected = true; stateSel.appendChild(o); });
+  }
+  async function loadLgas(zone, state) {
+    lgaSel.innerHTML = '<option value="">Select LGA</option>';
+    if (!zone || !state) return;
+    const res = await fetch('/api/lgas/' + encodeURIComponent(zone) + '/' + encodeURIComponent(state));
+    const lgas = await res.json();
+    lgas.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; if(l===currentLga) o.selected = true; lgaSel.appendChild(o); });
+  }
+  await loadStates(currentZone);
+  await loadLgas(currentZone, currentState);
+  zoneSel.addEventListener('change', async () => { await loadStates(zoneSel.value); });
+  stateSel.addEventListener('change', async () => { await loadLgas(zoneSel.value, stateSel.value); });
+})();
+</script>
+<%- include('../partials/footer') %>

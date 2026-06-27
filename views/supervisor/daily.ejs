@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+<div class="flex">
+  <%- include('../partials/sidebar') %>
+  <main class="flex-1 p-6">
+    <h2 class="text-2xl font-bold text-brand mb-6">Daily View</h2>
+    <div class="card mb-6">
+      <form action="/supervisor/daily" method="GET" class="flex gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium mb-1">Select Date</label>
+          <input type="date" name="date" class="form-input" value="<%= date %>">
+        </div>
+        <button type="submit" class="btn-primary">View</button>
+      </form>
+    </div>
+    <div class="card overflow-x-auto">
+      <table>
+        <thead>
+          <tr class="bg-brand text-white">
+            <th>CSR Name</th>
+            <th>Phone</th>
+            <th>State</th>
+            <th>Tier</th>
+            <th>Present</th>
+            <th>Products Sold</th>
+            <th>Total Units</th>
+            <th>Total Sales (&#8358;)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% dailyData.forEach(d => { %>
+          <tr class="hover:bg-surface">
+            <td class="font-medium"><%= d.fullName %></td>
+            <td><%= d.phoneNumber || 'N/A' %></td>
+            <td><%= d.state || 'N/A' %></td>
+            <td><span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"><%= d.tierName %></span></td>
+            <td><%= d.isPresent ? 'Yes' : 'No' %></td>
+            <td>
+              <% d.items.forEach(item => { %>
+                <div class="text-xs"><%= item.productName %> (<%= item.productGrammage %>): <%= item.quantity %> x &#8358;<%= item.unitPrice.toLocaleString() %></div>
+              <% }) %>
+            </td>
+            <td><%= d.totalUnits %></td>
+            <td class="font-semibold">&#8358;<%= d.totalValue.toLocaleString() %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>
