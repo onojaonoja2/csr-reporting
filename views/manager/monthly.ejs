@@ -40,6 +40,7 @@
               <th>% Target</th>
               <th>Earned (&#8358;)</th>
               <th>Status</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -69,6 +70,12 @@
                 <% } else { %>
                   <span class="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700">Unpaid</span>
                 <% } %>
+              </td>
+              <td>
+                <form action="/manager/csr/remove/<%= m.id %>" method="POST" class="inline" onsubmit="return confirm('Remove <%= m.fullName %>?')">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="text-red-500 text-xs hover:underline">Remove</button>
+                </form>
               </td>
             </tr>
             <% }) %>

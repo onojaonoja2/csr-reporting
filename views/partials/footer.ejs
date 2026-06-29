@@ -37,7 +37,29 @@ document.addEventListener('DOMContentLoaded', function() {
       expandBtn.classList.add('hidden');
     }
   }
+  // Restore CSR section state
+  const csrSection = document.getElementById('csrSection');
+  if (csrSection) {
+    const saved = localStorage.getItem('csr-section-collapsed');
+    if (saved === 'true') {
+      csrSection.dataset.collapsed = 'true';
+      document.getElementById('csrLinks').style.display = 'none';
+      document.getElementById('csrChevron').style.transform = 'rotate(-90deg)';
+    }
+  }
 });
+
+function toggleCsrSection() {
+  const section = document.getElementById('csrSection');
+  const links = document.getElementById('csrLinks');
+  const chevron = document.getElementById('csrChevron');
+  if (!section || !links) return;
+  const collapsed = section.dataset.collapsed === 'true';
+  section.dataset.collapsed = collapsed ? 'false' : 'true';
+  links.style.display = collapsed ? '' : 'none';
+  chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
+  localStorage.setItem('csr-section-collapsed', !collapsed);
+}
 </script>
 </body>
 </html>

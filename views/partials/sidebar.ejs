@@ -1,6 +1,6 @@
 <% if (user) { %>
-<div id="sidebarBackdrop" class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden" onclick="toggleSidebar()"></div>
-<aside id="sidebar" class="fixed top-14 left-0 z-40 bg-secondary overflow-y-auto transition-all duration-200
+<div id="sidebarBackdrop" class="fixed inset-0 z-20 bg-black/50 hidden lg:hidden" onclick="toggleSidebar()"></div>
+<aside id="sidebar" class="fixed top-14 left-0 z-10 bg-secondary overflow-y-auto transition-all duration-200
   w-64 p-4 -translate-x-full lg:translate-x-0
   lg:h-[calc(100vh-3.5rem)]"
   data-collapsed="false">
@@ -8,30 +8,38 @@
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
   </button>
   <nav class="space-y-1 mt-8 lg:mt-0">
-    <% if (user.role === 'admin') { %>
-      <a href="/admin/dashboard" class="sidebar-link <%= currentPath === '/admin/dashboard' ? 'active' : '' %>">Dashboard</a>
-      <a href="/admin/users/create" class="sidebar-link <%= currentPath === '/admin/users/create' ? 'active' : '' %>">Create User</a>
-      <a href="/admin/products" class="sidebar-link <%= currentPath === '/admin/products' || currentPath === '/admin/products/create' ? 'active' : '' %>">Products</a>
-    <% } %>
-    <% if (user.role === 'supervisor' || user.role === 'csr') { %>
-      <a href="/supervisor/dashboard" class="sidebar-link <%= currentPath === '/supervisor/dashboard' ? 'active' : '' %>">Sales Dashboard</a>
-      <a href="/supervisor/csr/create" class="sidebar-link <%= currentPath === '/supervisor/csr/create' || currentPath.startsWith('/supervisor/csr/edit') ? 'active' : '' %>">Manage CSRs</a>
-      <a href="/supervisor/activities" class="sidebar-link <%= currentPath === '/supervisor/activities' || currentPath.startsWith('/supervisor/activities') ? 'active' : '' %>">Activities Overview</a>
-      <a href="/supervisor/inventory" class="sidebar-link <%= currentPath === '/supervisor/inventory' ? 'active' : '' %>">CSR Inventory</a>
-      <a href="/supervisor/products" class="sidebar-link <%= currentPath === '/supervisor/products' || currentPath === '/supervisor/products/create' ? 'active' : '' %>">Products</a>
-      <a href="/supervisor/tiers" class="sidebar-link <%= currentPath === '/supervisor/tiers' ? 'active' : '' %>">Target Tiers</a>
-      <a href="/supervisor/paytable" class="sidebar-link <%= currentPath === '/supervisor/paytable' ? 'active' : '' %>">Pay Table</a>
-      <a href="/supervisor/removed" class="sidebar-link <%= currentPath === '/supervisor/removed' ? 'active' : '' %>">Removed CSRs</a>
-    <% } %>
-    <% if (user.role === 'manager') { %>
-      <a href="/manager/dashboard" class="sidebar-link <%= currentPath === '/manager/dashboard' ? 'active' : '' %>">Payout Matrix</a>
-      <a href="/manager/daily" class="sidebar-link <%= currentPath === '/manager/daily' ? 'active' : '' %>">Daily View</a>
-      <a href="/manager/weekly" class="sidebar-link <%= currentPath === '/manager/weekly' ? 'active' : '' %>">Weekly View</a>
-      <a href="/manager/monthly" class="sidebar-link <%= currentPath === '/manager/monthly' ? 'active' : '' %>">Monthly View</a>
-      <a href="/manager/payment/history" class="sidebar-link <%= currentPath === '/manager/payment/history' ? 'active' : '' %>">Payment History</a>
-      <a href="/manager/removed" class="sidebar-link <%= currentPath === '/manager/removed' ? 'active' : '' %>">Removed CSRs</a>
-      <a href="/manager/aggregate" class="sidebar-link <%= currentPath === '/manager/aggregate' ? 'active' : '' %>">Aggregate View</a>
-    <% } %>
+    <div id="csrSection" data-collapsed="false">
+      <button onclick="toggleCsrSection()" class="sidebar-link flex items-center justify-between w-full">
+        <span class="font-semibold tracking-wide">CSR</span>
+        <svg id="csrChevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div id="csrLinks" class="space-y-1 mt-1">
+        <% if (user.role === 'admin') { %>
+          <a href="/admin/dashboard" class="sidebar-link pl-6 <%= currentPath === '/admin/dashboard' ? 'active' : '' %>">Dashboard</a>
+          <a href="/admin/users/create" class="sidebar-link pl-6 <%= currentPath === '/admin/users/create' ? 'active' : '' %>">Create User</a>
+          <a href="/admin/products" class="sidebar-link pl-6 <%= currentPath === '/admin/products' || currentPath === '/admin/products/create' ? 'active' : '' %>">Products</a>
+        <% } %>
+        <% if (user.role === 'supervisor' || user.role === 'csr') { %>
+          <a href="/supervisor/dashboard" class="sidebar-link pl-6 <%= currentPath === '/supervisor/dashboard' ? 'active' : '' %>">Sales Dashboard</a>
+          <a href="/supervisor/csr/create" class="sidebar-link pl-6 <%= currentPath === '/supervisor/csr/create' || currentPath.startsWith('/supervisor/csr/edit') ? 'active' : '' %>">Manage CSRs</a>
+          <a href="/supervisor/activities" class="sidebar-link pl-6 <%= currentPath === '/supervisor/activities' || currentPath.startsWith('/supervisor/activities') ? 'active' : '' %>">Activities Overview</a>
+          <a href="/supervisor/inventory" class="sidebar-link pl-6 <%= currentPath === '/supervisor/inventory' ? 'active' : '' %>">CSR Inventory</a>
+          <a href="/supervisor/products" class="sidebar-link pl-6 <%= currentPath === '/supervisor/products' || currentPath === '/supervisor/products/create' ? 'active' : '' %>">Products</a>
+          <a href="/supervisor/tiers" class="sidebar-link pl-6 <%= currentPath === '/supervisor/tiers' ? 'active' : '' %>">Target Tiers</a>
+          <a href="/supervisor/paytable" class="sidebar-link pl-6 <%= currentPath === '/supervisor/paytable' ? 'active' : '' %>">Pay Table</a>
+          <a href="/supervisor/removed" class="sidebar-link pl-6 <%= currentPath === '/supervisor/removed' ? 'active' : '' %>">Removed CSRs</a>
+        <% } %>
+        <% if (user.role === 'manager') { %>
+          <a href="/manager/dashboard" class="sidebar-link pl-6 <%= currentPath === '/manager/dashboard' ? 'active' : '' %>">Payout Matrix</a>
+          <a href="/manager/daily" class="sidebar-link pl-6 <%= currentPath === '/manager/daily' ? 'active' : '' %>">Daily View</a>
+          <a href="/manager/weekly" class="sidebar-link pl-6 <%= currentPath === '/manager/weekly' ? 'active' : '' %>">Weekly View</a>
+          <a href="/manager/monthly" class="sidebar-link pl-6 <%= currentPath === '/manager/monthly' ? 'active' : '' %>">Monthly View</a>
+          <a href="/manager/payment/history" class="sidebar-link pl-6 <%= currentPath === '/manager/payment/history' ? 'active' : '' %>">Payment History</a>
+          <a href="/manager/removed" class="sidebar-link pl-6 <%= currentPath === '/manager/removed' ? 'active' : '' %>">Removed CSRs</a>
+          <a href="/manager/aggregate" class="sidebar-link pl-6 <%= currentPath === '/manager/aggregate' ? 'active' : '' %>">Aggregate View</a>
+        <% } %>
+      </div>
+    </div>
     <hr class="my-3 border-brand opacity-30">
     <a href="/profile" class="sidebar-link <%= currentPath === '/profile' ? 'active' : '' %>">My Profile</a>
   </nav>
@@ -39,7 +47,7 @@
     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
   </button>
 </aside>
-<button id="expandBtn" onclick="collapseSidebar()" class="hidden fixed top-14 left-0 z-40 w-7 h-12 bg-secondary rounded-r shadow items-center justify-center hover:bg-surface transition-opacity" title="Expand sidebar">
+<button id="expandBtn" onclick="collapseSidebar()" class="hidden fixed top-14 left-0 z-10 w-7 h-12 bg-secondary rounded-r shadow items-center justify-center hover:bg-surface transition-opacity" title="Expand sidebar">
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
 </button>
 <% } %>

@@ -24,6 +24,7 @@
             <th>Days Present</th>
             <th>Total Units</th>
             <th>Total Sales (&#8358;)</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -36,6 +37,12 @@
             <td><%= w.presentDays %></td>
             <td><%= w.totalUnits %></td>
             <td class="font-semibold">&#8358;<%= w.totalValue.toLocaleString() %></td>
+            <td>
+              <form action="/manager/csr/remove/<%= w.id %>" method="POST" class="inline" onsubmit="return confirm('Remove <%= w.fullName %>?')">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="text-red-500 text-xs hover:underline">Remove</button>
+              </form>
+            </td>
           </tr>
           <% }) %>
         </tbody>
