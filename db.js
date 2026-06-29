@@ -33,137 +33,6 @@ async function ensureDatabase() {
   await conn.end();
 }
 
-async function initSchema() {
-  const conn = await pool.getConnection();
-  try {
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        fullName VARCHAR(255) NOT NULL,
-        phoneNumber VARCHAR(50),
-        address TEXT,
-        role VARCHAR(50) NOT NULL DEFAULT 'csr',
-        zone VARCHAR(100),
-        state VARCHAR(100),
-        lga VARCHAR(100),
-        isActive TINYINT NOT NULL DEFAULT 1,
-        theme VARCHAR(20) DEFAULT 'light',
-        removedBy INT,
-        removedAt DATETIME,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (removedBy) REFERENCES users(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        grammage VARCHAR(100) NOT NULL,
-        createdBy INT,
-        isActive TINYINT NOT NULL DEFAULT 1,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (createdBy) REFERENCES users(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS target_tiers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        monthlyTarget INT NOT NULL DEFAULT 0,
-        monthlySalary INT NOT NULL DEFAULT 0,
-        createdBy INT,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (createdBy) REFERENCES users(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS csr_tier (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        csrId INT UNIQUE NOT NULL,
-        tierId INT NOT NULL,
-        assignedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (csrId) REFERENCES users(id),
-        FOREIGN KEY (tierId) REFERENCES target_tiers(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS csr_inventory (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        csrId INT NOT NULL,
-        productId INT NOT NULL,
-        quantity INT NOT NULL DEFAULT 0,
-        lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (csrId) REFERENCES users(id),
-        FOREIGN KEY (productId) REFERENCES products(id),
-        UNIQUE KEY unique_csr_product (csrId, productId)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS sales_entries (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        csrId INT NOT NULL,
-        date DATE NOT NULL,
-        isPresent TINYINT NOT NULL DEFAULT 1,
-        loggedBy INT,
-        dayClosed TINYINT NOT NULL DEFAULT 0,
-        closedAt DATETIME,
-        FOREIGN KEY (csrId) REFERENCES users(id),
-        FOREIGN KEY (loggedBy) REFERENCES users(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS sales_entry_items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        entryId INT NOT NULL,
-        productId INT NOT NULL,
-        quantity INT NOT NULL DEFAULT 0,
-        unitPrice INT NOT NULL DEFAULT 0,
-        salesValue INT NOT NULL DEFAULT 0,
-        FOREIGN KEY (entryId) REFERENCES sales_entries(id),
-        FOREIGN KEY (productId) REFERENCES products(id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS payment_history (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        csrId INT NOT NULL,
-        month VARCHAR(7) NOT NULL,
-        totalSales INT NOT NULL DEFAULT 0,
-        target INT NOT NULL DEFAULT 0,
-        baseSalary INT NOT NULL DEFAULT 0,
-        earnedPay INT NOT NULL DEFAULT 0,
-        percentTarget INT NOT NULL DEFAULT 0,
-        confirmedBy INT,
-        confirmedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (csrId) REFERENCES users(id),
-        FOREIGN KEY (confirmedBy) REFERENCES users(id),
-        UNIQUE KEY unique_csr_month (csrId, month)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    const [userCols] = await conn.query("SHOW COLUMNS FROM users LIKE 'removedBy'");
-    if (userCols.length === 0) {
-      await conn.query("ALTER TABLE users ADD COLUMN removedBy INT, ADD FOREIGN KEY (removedBy) REFERENCES users(id)");
-    }
-    const [removedAtCols] = await conn.query("SHOW COLUMNS FROM users LIKE 'removedAt'");
-    if (removedAtCols.length === 0) {
-      await conn.query("ALTER TABLE users ADD COLUMN removedAt DATETIME");
-    }
-  } finally {
-    conn.release();
-  }
-}
-
 async function seed() {
   const conn = await pool.getConnection();
   try {
@@ -222,17 +91,6 @@ async function seed() {
   }
 }
 
-async function init() {
-  await ensureDatabase();
-  await initSchema();
-  await seed();
-}
-
-init().catch(err => {
-  console.error('Database initialization failed:', err);
-  process.exit(1);
-});
-
 function makeExecutor(execFn) {
   return {
     prepare: (sql) => ({
@@ -286,5 +144,30 @@ const db = {
     await pool.end();
   }
 };
+
+async function runMigrations() {
+  const { sequelize } = require('./models');
+  const { Umzug, SequelizeStorage } = require('umzug');
+
+  const umzug = new Umzug({
+    migrations: { glob: 'migrations/*.js' },
+    context: sequelize.getQueryInterface(),
+    storage: new SequelizeStorage({ sequelize }),
+    logger: console,
+  });
+
+  await umzug.up();
+}
+
+async function init() {
+  await ensureDatabase();
+  await runMigrations();
+  await seed();
+}
+
+init().catch(err => {
+  console.error('Database initialization failed:', err);
+  process.exit(1);
+});
 
 module.exports = db;
