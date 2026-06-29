@@ -24,6 +24,25 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+body > .flex {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+}
+
+body > .flex > main {
+  overflow-y: auto;
+  height: 100%;
+}
+
+body > footer {
+  flex-shrink: 0;
 }
 
 .bg-brand { background-color: var(--accent); }
@@ -106,4 +125,37 @@ th, td {
 .sidebar-link:hover, .sidebar-link.active {
   background-color: var(--surface);
   color: var(--accent);
+}
+
+@media (min-width: 1024px) {
+  main.flex-1 {
+    margin-left: 16rem;
+    transition: margin-left 0.2s;
+  }
+  body.sidebar-collapsed main.flex-1 {
+    margin-left: 0;
+  }
+  body.sidebar-collapsed #expandBtn {
+    display: flex !important;
+  }
+  #sidebar[data-collapsed="true"] {
+    width: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .card { padding: 1rem; }
+  th, td { padding: 0.5rem; }
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+  table { min-width: 600px; }
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

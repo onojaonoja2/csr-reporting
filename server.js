@@ -77,7 +77,13 @@ app.use('/manager', managerRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).render('index', { error: 'Internal server error. Please try again.' });
+  if (req.method === 'POST') {
+    const referer = req.get('Referer') || '/';
+    const sep = referer.includes('?') ? '&' : '?';
+    res.redirect(`${referer}${sep}error=${encodeURIComponent('An unexpected error occurred')}`);
+  } else {
+    res.status(500).render('index', { error: 'A server error occurred. Please try again.' });
+  }
 });
 
 app.listen(PORT, () => {

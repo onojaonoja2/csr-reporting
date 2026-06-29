@@ -1,5 +1,43 @@
-  <footer class="bg-brand text-white text-center py-4 mt-auto">
+  <footer class="bg-brand text-white text-center py-4 shrink-0">
     <p class="text-sm opacity-80">&copy; 2026 Elkris Foods. All rights reserved.</p>
   </footer>
+</div>
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (!sidebar) return;
+  const open = !sidebar.classList.contains('-translate-x-full');
+  sidebar.classList.toggle('translate-x-0', !open);
+  sidebar.classList.toggle('-translate-x-full', open);
+  if (backdrop) backdrop.classList.toggle('hidden', open);
+}
+
+function collapseSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const btn = document.getElementById('collapseBtn');
+  const expandBtn = document.getElementById('expandBtn');
+  if (!sidebar) return;
+  const collapsed = sidebar.dataset.collapsed === 'true';
+  sidebar.dataset.collapsed = collapsed ? 'false' : 'true';
+  document.body.classList.toggle('sidebar-collapsed', !collapsed);
+  if (btn) btn.style.display = collapsed ? 'flex' : 'none';
+  if (expandBtn) expandBtn.classList.toggle('hidden', collapsed);
+  if (expandBtn) expandBtn.style.display = collapsed ? 'none' : 'flex';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  if (window.innerWidth >= 1024) {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    const expandBtn = document.getElementById('expandBtn');
+    if (expandBtn && sidebar.dataset.collapsed !== 'true') {
+      expandBtn.classList.add('hidden');
+    }
+  }
+});
+</script>
 </body>
 </html>

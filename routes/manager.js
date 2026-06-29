@@ -29,15 +29,19 @@ async function getCsrPayData(csrId, monthPrefix) {
 }
 
 router.get('/dashboard', async (req, res) => {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const csrs = await db.prepare("SELECT * FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
-  const payouts = [];
-  for (const csr of csrs) {
-    const payData = await getCsrPayData(csr.id, currentMonth);
-    payouts.push({ ...csr, ...payData });
+  try {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const csrs = await db.prepare("SELECT * FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
+    const payouts = [];
+    for (const csr of csrs) {
+      const payData = await getCsrPayData(csr.id, currentMonth);
+      payouts.push({ ...csr, ...payData });
+    }
+    res.render('manager/dashboard', { payouts, currentMonth, user: req.session.user, success: req.query.success || null, error: req.query.error || null });
+  } catch (err) {
+    res.render('manager/dashboard', { payouts: [], currentMonth: '', user: req.session.user, success: null, error: 'Failed to load dashboard' });
   }
-  res.render('manager/dashboard', { payouts, currentMonth, user: req.session.user });
 });
 
 router.get('/daily', async (req, res) => {
@@ -107,9 +111,13 @@ router.get('/monthly', async (req, res) => {
 });
 
 router.post('/csr/remove/:csrId', async (req, res) => {
-  await db.prepare("UPDATE users SET isActive = 0, removedBy = ?, removedAt = NOW() WHERE id = ?")
-    .run(req.session.user.id, parseInt(req.params.csrId));
-  res.redirect('/manager/dashboard');
+  try {
+    await db.prepare("UPDATE users SET isActive = 0, removedBy = ?, removedAt = NOW() WHERE id = ?")
+      .run(req.session.user.id, parseInt(req.params.csrId));
+    res.redirect('/manager/dashboard?success=CSR+removed');
+  } catch (err) {
+    res.redirect('/manager/dashboard?error=Failed+to+remove+CSR');
+  }
 });
 
 router.get('/removed', async (req, res) => {
@@ -138,33 +146,41 @@ router.get('/removed', async (req, res) => {
 });
 
 router.post('/payment/confirm/:csrId', async (req, res) => {
-  const { month } = req.body;
-  const csrId = parseInt(req.params.csrId);
-  const payData = await getCsrPayData(csrId, month);
-  const existing = await db.prepare('SELECT id FROM payment_history WHERE csrId = ? AND month = ?').get(csrId, month);
-  if (!existing) {
-    await db.prepare("INSERT INTO payment_history (csrId, month, totalSales, target, baseSalary, earnedPay, percentTarget, confirmedBy, confirmedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())")
-      .run(csrId, month, payData.totalValue, payData.target, payData.baseSalary, payData.earnedPay, payData.percentTarget, req.session.user.id);
+  try {
+    const { month } = req.body;
+    const csrId = parseInt(req.params.csrId);
+    const payData = await getCsrPayData(csrId, month);
+    const existing = await db.prepare('SELECT id FROM payment_history WHERE csrId = ? AND month = ?').get(csrId, month);
+    if (!existing) {
+      await db.prepare("INSERT INTO payment_history (csrId, month, totalSales, target, baseSalary, earnedPay, percentTarget, confirmedBy, confirmedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())")
+        .run(csrId, month, payData.totalValue, payData.target, payData.baseSalary, payData.earnedPay, payData.percentTarget, req.session.user.id);
+    }
+    res.redirect(req.get('Referer') || '/manager/dashboard?success=Payment+confirmed');
+  } catch (err) {
+    res.redirect(req.get('Referer') || '/manager/dashboard?error=Failed+to+confirm+payment');
   }
-  res.redirect(req.get('Referer') || '/manager/dashboard');
 });
 
 router.post('/payment/bulk', async (req, res) => {
-  const { csrIds, month } = req.body;
-  const ids = Array.isArray(csrIds) ? csrIds : (csrIds ? [csrIds] : []);
-  await db.transaction(async (tx) => {
-    for (const csrId of ids) {
-      const id = parseInt(csrId);
-      const existing = await tx.prepare('SELECT id FROM payment_history WHERE csrId = ? AND month = ?').get(id, month);
-      if (existing) continue;
-      const payData = await getCsrPayData(id, month);
-      if (payData.earnedPay > 0) {
-        await tx.prepare("INSERT INTO payment_history (csrId, month, totalSales, target, baseSalary, earnedPay, percentTarget, confirmedBy, confirmedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())")
-          .run(id, month, payData.totalValue, payData.target, payData.baseSalary, payData.earnedPay, payData.percentTarget, req.session.user.id);
+  try {
+    const { csrIds, month } = req.body;
+    const ids = Array.isArray(csrIds) ? csrIds : (csrIds ? [csrIds] : []);
+    await db.transaction(async (tx) => {
+      for (const csrId of ids) {
+        const id = parseInt(csrId);
+        const existing = await tx.prepare('SELECT id FROM payment_history WHERE csrId = ? AND month = ?').get(id, month);
+        if (existing) continue;
+        const payData = await getCsrPayData(id, month);
+        if (payData.earnedPay > 0) {
+          await tx.prepare("INSERT INTO payment_history (csrId, month, totalSales, target, baseSalary, earnedPay, percentTarget, confirmedBy, confirmedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())")
+            .run(id, month, payData.totalValue, payData.target, payData.baseSalary, payData.earnedPay, payData.percentTarget, req.session.user.id);
+        }
       }
-    }
-  });
-  res.redirect(req.get('Referer') || '/manager/dashboard');
+    });
+    res.redirect(req.get('Referer') || '/manager/dashboard?success=Payments+confirmed');
+  } catch (err) {
+    res.redirect(req.get('Referer') || '/manager/dashboard?error=Failed+to+process+payments');
+  }
 });
 
 router.get('/payment/history', async (req, res) => {

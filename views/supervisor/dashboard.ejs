@@ -119,66 +119,118 @@
     </div>
 
     <h3 class="text-lg font-semibold mb-4">CSR Overview</h3>
+
+    <div class="card mb-4">
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium mb-1">Search</label>
+          <input type="text" id="filterName" class="form-input text-sm" placeholder="Name, phone, or state..." oninput="filterCsrTable()">
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">State</label>
+          <select id="filterState" class="form-input text-sm" onchange="filterCsrTable()">
+            <option value="">All States</option>
+            <% [...new Set(csrData.map(c => c.state).filter(Boolean))].sort().forEach(s => { %>
+              <option value="<%= s %>"><%= s %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">Tier</label>
+          <select id="filterTier" class="form-input text-sm" onchange="filterCsrTable()">
+            <option value="">All Tiers</option>
+            <% [...new Set(csrData.map(c => c.tierName).filter(Boolean))].sort().forEach(t => { %>
+              <option value="<%= t %>"><%= t %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="text-xs text-secondary py-2" id="csrCount"></div>
+      </div>
+    </div>
+
     <form action="/supervisor/payment/bulk" method="POST" id="bulkPayDashForm2">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <% csrData.forEach(c => { %>
-        <div class="card">
-          <div class="flex justify-between items-start mb-2">
-            <div class="flex items-start gap-2">
-              <% if (!c.isPaid) { %>
-                <input type="checkbox" name="csrIds" value="<%= c.id %>" class="csr-check mt-1">
-              <% } %>
-              <div>
-                <h3 class="font-semibold text-brand"><%= c.fullName %></h3>
-                <p class="text-xs text-secondary"><%= c.phoneNumber || 'N/A' %> | <%= c.state || 'N/A' %></p>
-              </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"><%= c.tierName %></span>
-              <form action="/supervisor/csr/remove/<%= c.id %>" method="POST" class="inline">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="text-red-500 text-xs hover:underline" onclick="return confirm('Remove <%= c.fullName %>? They will be offboarded.')">Remove</button>
-              </form>
-            </div>
-          </div>
-          <div class="space-y-1 text-sm mb-3">
-            <div class="flex justify-between"><span class="text-secondary">Monthly Target:</span><span class="font-medium">&#8358;<%= c.target.toLocaleString() %></span></div>
-            <div class="flex justify-between"><span class="text-secondary">Sales This Month:</span><span class="font-medium">&#8358;<%= c.monthlySales.toLocaleString() %></span></div>
-            <div class="flex justify-between"><span class="text-secondary">% of Target:</span>
-              <span class="font-bold <%= c.percentTarget >= 100 ? 'text-green-600' : c.percentTarget >= 50 ? 'text-yellow-600' : 'text-red-600' %>"><%= c.percentTarget %>%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-              <div class="h-2 rounded-full <%= c.percentTarget >= 100 ? 'bg-green-500' : c.percentTarget >= 50 ? 'bg-yellow-500' : 'bg-red-500' %>" style="width: <%= Math.min(c.percentTarget, 100) %>%"></div>
-            </div>
-          </div>
-          <div class="text-xs text-secondary border-t pt-2 flex justify-between">
-            <span>Today: <%= c.isPresent ? 'Present' : 'Not Logged' %></span>
-            <span>Inventory: <%= c.inventory.length %> products</span>
-            <% if (c.isPaid) { %>
-              <span class="text-green-600 font-semibold">Paid</span>
-            <% } else { %>
-              <form action="/supervisor/payment/confirm/<%= c.id %>" method="POST" class="inline">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
-                <button type="submit" class="text-green-600 hover:underline" onclick="return confirm('Confirm payment for <%= c.fullName %>?')">Confirm Pay</button>
-              </form>
-            <% } %>
-          </div>
+      <div class="card overflow-x-auto mb-4">
+        <table class="csr-table">
+          <thead>
+            <tr class="text-xs text-secondary border-b">
+              <th class="w-10"><input type="checkbox" id="selectAllCsr" onchange="toggleAllChecks()"></th>
+              <th>CSR Name</th>
+              <th>Phone</th>
+              <th>State</th>
+              <th>Tier</th>
+              <th>Target (&#8358;)</th>
+              <th>Sales (&#8358;)</th>
+              <th>%</th>
+              <th>Today</th>
+              <th>Pay</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="csrTableBody">
+            <% csrData.forEach(c => { %>
+            <tr class="text-sm csr-row" data-name="<%= (c.fullName || '').toLowerCase() %>" data-phone="<%= (c.phoneNumber || '').toLowerCase() %>" data-state="<%= (c.state || '').toLowerCase() %>" data-tier="<%= (c.tierName || '').toLowerCase() %>">
+              <td>
+                <% if (!c.isPaid) { %>
+                  <input type="checkbox" name="csrIds" value="<%= c.id %>" class="csr-check">
+                <% } %>
+              </td>
+              <td class="font-medium"><%= c.fullName %></td>
+              <td><%= c.phoneNumber || 'N/A' %></td>
+              <td><%= c.state || 'N/A' %></td>
+              <td><span class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"><%= c.tierName %></span></td>
+              <td class="font-medium">&#8358;<%= c.target.toLocaleString() %></td>
+              <td class="font-medium">&#8358;<%= c.monthlySales.toLocaleString() %></td>
+              <td>
+                <span class="font-bold <%= c.percentTarget >= 100 ? 'text-green-600' : c.percentTarget >= 50 ? 'text-yellow-600' : 'text-red-600' %>"><%= c.percentTarget %>%</span>
+              </td>
+              <td><%= c.isPresent ? 'Present' : 'Not Logged' %></td>
+              <td>
+                <% if (c.isPaid) { %>
+                  <span class="text-green-600 font-semibold">Paid</span>
+                <% } else { %>
+                  <form action="/supervisor/payment/confirm/<%= c.id %>" method="POST" class="inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
+                    <button type="submit" class="text-green-600 hover:underline text-xs" onclick="return confirm('Confirm payment for <%= c.fullName %>?')">Pay</button>
+                  </form>
+                <% } %>
+              </td>
+              <td>
+                <form action="/supervisor/csr/remove/<%= c.id %>" method="POST" class="inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="text-red-500 text-xs hover:underline" onclick="return confirm('Remove <%= c.fullName %>?')">Remove</button>
+                </form>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex gap-2 items-center">
+          <span class="text-xs text-secondary">Rows per page:</span>
+          <select id="perPage" class="form-input text-sm w-16" onchange="paginateCsrTable()">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
         </div>
-        <% }) %>
+        <div class="flex gap-2 items-center">
+          <button type="button" class="px-3 py-1 text-sm border rounded hover:bg-surface" onclick="prevPage()">&larr;</button>
+          <span id="pageInfo" class="text-sm text-secondary"></span>
+          <button type="button" class="px-3 py-1 text-sm border rounded hover:bg-surface" onclick="nextPage()">&rarr;</button>
+        </div>
+        <button type="button" onclick="document.getElementById('bulkPayDashForm2').submit()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg">Pay Selected</button>
       </div>
     </form>
-    <div class="flex justify-end mb-6">
-      <button type="button" onclick="document.getElementById('bulkPayDashForm2').submit()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg">Pay Selected</button>
-    </div>
   </main>
 </div>
 <script>
 let rowIndex = 1;
 function addProductRow() {
-  const products = `<%= products.map(p => '<option value="'+p.id+'">'+p.name+' ('+p.grammage+')</option>').join('') %>`;
+  const products = `<%- products.map(p => '<option value="'+p.id+'">'+p.name+' ('+p.grammage+')</option>').join('') %>`;
   const html = '<div class="flex gap-2 items-end product-row"><select name="productIds" class="form-input text-sm flex-1 product-select" required><option value="">Select Product</option>' + products + '</select><input type="number" name="quantities" min="1" class="form-input text-sm w-20 qty-input" placeholder="Qty" required><input type="number" name="unitPrices" min="0" class="form-input text-sm w-28 price-input" placeholder="Unit Price" required><input type="text" class="form-input text-sm w-28 value-display" readonly placeholder="Value"><button type="button" onclick="removeProductRow(this)" class="text-red-500 hover:text-red-700 text-sm px-1">&times;</button></div>';
   document.getElementById('productRows').insertAdjacentHTML('beforeend', html);
   bindCalcEvents(document.querySelector('.product-row:last-child'));
@@ -197,5 +249,56 @@ function bindCalcEvents(row) {
   row.querySelector('.price-input').addEventListener('input', function() { calcValue(row); });
 }
 document.querySelectorAll('.product-row').forEach(bindCalcEvents);
+
+// CSR Table filter + pagination
+let currentPage = 1;
+function filterCsrTable() {
+  currentPage = 1;
+  paginateCsrTable();
+}
+function getFilteredRows() {
+  const query = document.getElementById('filterName').value.toLowerCase().trim();
+  const state = document.getElementById('filterState').value.toLowerCase();
+  const tier = document.getElementById('filterTier').value.toLowerCase();
+  return Array.from(document.querySelectorAll('.csr-row')).filter(row => {
+    const name = row.dataset.name;
+    const phone = row.dataset.phone;
+    const stateVal = row.dataset.state;
+    const tierVal = row.dataset.tier;
+    if (state && stateVal !== state) return false;
+    if (tier && tierVal !== tier) return false;
+    if (query && !name.includes(query) && !phone.includes(query) && !stateVal.includes(query)) return false;
+    return true;
+  });
+}
+function paginateCsrTable() {
+  const rows = getFilteredRows();
+  const perPage = parseInt(document.getElementById('perPage').value);
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * perPage;
+  const end = start + perPage;
+  document.querySelectorAll('.csr-row').forEach(r => r.style.display = 'none');
+  rows.slice(start, end).forEach(r => r.style.display = '');
+  document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+  document.getElementById('csrCount').textContent = `${total} CSR${total !== 1 ? 's' : ''}`;
+}
+function prevPage() {
+  const perPage = parseInt(document.getElementById('perPage').value);
+  const total = getFilteredRows().length;
+  if (currentPage > 1) { currentPage--; paginateCsrTable(); }
+}
+function nextPage() {
+  const perPage = parseInt(document.getElementById('perPage').value);
+  const total = getFilteredRows().length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  if (currentPage < totalPages) { currentPage++; paginateCsrTable(); }
+}
+function toggleAllChecks() {
+  const checked = document.getElementById('selectAllCsr').checked;
+  document.querySelectorAll('.csr-check').forEach(cb => cb.checked = checked);
+}
+paginateCsrTable();
 </script>
 <%- include('../partials/footer') %>

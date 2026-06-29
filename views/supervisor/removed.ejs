@@ -42,7 +42,7 @@
               <% } %>
             </td>
             <td>
-              <% if (!c.isPaid && c.outstanding > 0) { %>
+              <% if (!c.isPaid) { %>
               <form action="/supervisor/payment/confirm/<%= c.id %>" method="POST" class="inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="month" value="<%= c.removedMonth %>">

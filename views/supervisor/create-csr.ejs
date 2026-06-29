@@ -2,39 +2,54 @@
 <div class="flex">
   <%- include('../partials/sidebar') %>
   <main class="flex-1 p-6">
-    <h2 class="text-2xl font-bold text-brand mb-6">Create CSR</h2>
+    <h2 class="text-2xl font-bold text-brand mb-6"><%= csr ? 'Edit CSR' : 'Create CSR' %></h2>
     <% if (error) { %>
       <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-3 rounded-lg mb-4 text-sm"><%= error %></div>
     <% } %>
+
+    <div class="card mb-6 max-w-lg">
+      <form action="/supervisor/csr/edit" method="GET" class="flex gap-4 items-end">
+        <div class="flex-1">
+          <label class="block text-sm font-medium mb-1">Edit Existing CSR</label>
+          <select name="csrId" class="form-input" onchange="this.form.submit()">
+            <option value="">Select CSR to edit...</option>
+            <% (csrs || []).forEach(c => { %>
+              <option value="<%= c.id %>" <%= csr && csr.id === c.id ? 'selected' : '' %>><%= c.fullName %> (<%= c.phoneNumber || 'N/A' %>)</option>
+            <% }) %>
+          </select>
+        </div>
+      </form>
+    </div>
+
     <div class="card max-w-lg">
-      <form action="/supervisor/csr/create" method="POST" class="space-y-4">
+      <form action="<%= csr ? '/supervisor/csr/edit/' + csr.id : '/supervisor/csr/create' %>" method="POST" class="space-y-4">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div>
           <label class="block text-sm font-medium mb-1">Full Name</label>
-          <input type="text" name="fullName" class="form-input" required placeholder="Enter full name">
+          <input type="text" name="fullName" class="form-input" required placeholder="Enter full name" value="<%= csr ? csr.fullName : '' %>">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Email</label>
-          <input type="email" name="email" class="form-input" required placeholder="Enter email">
+          <input type="email" name="email" class="form-input" required placeholder="Enter email" value="<%= csr ? csr.email : '' %>">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Password</label>
-          <input type="password" name="password" class="form-input" required placeholder="Enter password">
+          <input type="password" name="password" class="form-input" <%= csr ? '' : 'required' %> placeholder="<%= csr ? 'Leave blank to keep current' : 'Enter password' %>">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Phone Number</label>
-          <input type="text" name="phoneNumber" class="form-input" placeholder="Enter phone number">
+          <input type="text" name="phoneNumber" class="form-input" placeholder="Enter phone number" value="<%= csr ? csr.phoneNumber || '' : '' %>">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Address</label>
-          <input type="text" name="address" class="form-input" placeholder="Enter address">
+          <input type="text" name="address" class="form-input" placeholder="Enter address" value="<%= csr ? csr.address || '' : '' %>">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Zone</label>
           <select name="zone" class="form-input" id="zoneSelect">
             <option value="">Select Zone</option>
             <% Object.keys(zones).forEach(z => { %>
-              <option value="<%= z %>"><%= z %></option>
+              <option value="<%= z %>" <%= csr && csr.zone === z ? 'selected' : '' %>><%= z %></option>
             <% }) %>
           </select>
         </div>
@@ -55,12 +70,12 @@
           <select name="tierId" class="form-input">
             <option value="">No Tier</option>
             <% tiers.forEach(t => { %>
-              <option value="<%= t.id %>"><%= t.name %> (Target: &#8358;<%= t.monthlyTarget.toLocaleString() %>)</option>
+              <option value="<%= t.id %>" <%= csr && csr.tierId === t.id ? 'selected' : '' %>><%= t.name %> (Target: &#8358;<%= t.monthlyTarget.toLocaleString() %>)</option>
             <% }) %>
           </select>
         </div>
         <div class="flex gap-3">
-          <button type="submit" class="btn-primary">Create CSR</button>
+          <button type="submit" class="btn-primary"><%= csr ? 'Update CSR' : 'Create CSR' %></button>
           <a href="/supervisor/dashboard" class="px-4 py-2 border rounded-lg text-sm hover:bg-surface">Cancel</a>
         </div>
       </form>
@@ -69,19 +84,39 @@
 </div>
 <script>
 const zones = <%- JSON.stringify(zones) %>;
-document.getElementById('zoneSelect').addEventListener('change', function() {
-  const states = zones[this.value] || {};
+const selectedZone = '<%= csr ? (csr.zone || '') : '' %>';
+const selectedState = '<%= csr ? (csr.state || '') : '' %>';
+const selectedLga = '<%= csr ? (csr.lga || '') : '' %>';
+
+function populateStates() {
+  const zone = document.getElementById('zoneSelect').value;
+  const states = zones[zone] || {};
   const stateSelect = document.getElementById('stateSelect');
   stateSelect.innerHTML = '<option value="">Select State</option>';
-  Object.keys(states).forEach(s => { stateSelect.innerHTML += '<option value="' + s + '">' + s + '</option>'; });
+  Object.keys(states).forEach(s => {
+    stateSelect.innerHTML += '<option value="' + s + '"' + (s === selectedState ? ' selected' : '') + '>' + s + '</option>';
+  });
+  if (selectedState && states[selectedState]) populateLgas();
+}
+function populateLgas() {
+  const zone = document.getElementById('zoneSelect').value;
+  const state = document.getElementById('stateSelect').value;
+  const lgas = (zones[zone] || {})[state] || [];
+  const lgaSelect = document.getElementById('lgaSelect');
+  lgaSelect.innerHTML = '<option value="">Select LGA</option>';
+  lgas.forEach(l => {
+    lgaSelect.innerHTML += '<option value="' + l + '"' + (l === selectedLga ? ' selected' : '') + '>' + l + '</option>';
+  });
+}
+document.getElementById('zoneSelect').addEventListener('change', function() {
+  selectedState = ''; selectedLga = '';
+  populateStates();
   document.getElementById('lgaSelect').innerHTML = '<option value="">Select LGA</option>';
 });
 document.getElementById('stateSelect').addEventListener('change', function() {
-  const zone = document.getElementById('zoneSelect').value;
-  const lgas = (zones[zone] || {})[this.value] || [];
-  const lgaSelect = document.getElementById('lgaSelect');
-  lgaSelect.innerHTML = '<option value="">Select LGA</option>';
-  lgas.forEach(l => { lgaSelect.innerHTML += '<option value="' + l + '">' + l + '</option>'; });
+  selectedLga = '';
+  populateLgas();
 });
+if (selectedZone) { document.getElementById('zoneSelect').value = selectedZone; populateStates(); }
 </script>
 <%- include('../partials/footer') %>
