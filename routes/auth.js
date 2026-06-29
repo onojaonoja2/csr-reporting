@@ -19,9 +19,9 @@ router.get('/', (req, res) => {
   res.render('index', { error: null });
 });
 
-router.post('/login', loginLimiter, (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE email = ? AND isActive = 1').get(email);
+  const user = await db.prepare('SELECT * FROM users WHERE email = ? AND isActive = 1').get(email);
   if (!user || user.password !== password) {
     return res.render('index', { error: 'Invalid credentials or inactive account' });
   }
@@ -46,10 +46,10 @@ router.get('/profile', (req, res) => {
   res.render('profile', { user: req.session.user, error: null, success: null });
 });
 
-router.post('/profile', (req, res) => {
+router.post('/profile', async (req, res) => {
   if (!req.session.user) return res.redirect('/');
   const { currentPassword, newPassword, confirmPassword } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.user.id);
+  const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.user.id);
   if (!user) return res.redirect('/');
 
   if (newPassword && newPassword.trim().length > 0) {
@@ -59,7 +59,7 @@ router.post('/profile', (req, res) => {
     if (newPassword !== confirmPassword) {
       return res.render('profile', { user: req.session.user, error: 'New passwords do not match', success: null });
     }
-    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(newPassword.trim(), user.id);
+    await db.prepare('UPDATE users SET password = ? WHERE id = ?').run(newPassword.trim(), user.id);
     return res.render('profile', { user: req.session.user, error: null, success: 'Password updated successfully' });
   }
 

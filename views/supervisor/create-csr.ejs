@@ -50,6 +50,15 @@
             <option value="">Select LGA</option>
           </select>
         </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Tier</label>
+          <select name="tierId" class="form-input">
+            <option value="">No Tier</option>
+            <% tiers.forEach(t => { %>
+              <option value="<%= t.id %>"><%= t.name %> (Target: &#8358;<%= t.monthlyTarget.toLocaleString() %>)</option>
+            <% }) %>
+          </select>
+        </div>
         <div class="flex gap-3">
           <button type="submit" class="btn-primary">Create CSR</button>
           <a href="/supervisor/dashboard" class="px-4 py-2 border rounded-lg text-sm hover:bg-surface">Cancel</a>

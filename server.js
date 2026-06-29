@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('express-async-errors');
 const express = require('express');
 const session = require('express-session');
 const crypto = require('crypto');
@@ -73,6 +74,11 @@ app.use('/', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/supervisor', supervisorRoutes);
 app.use('/manager', managerRoutes);
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).render('index', { error: 'Internal server error. Please try again.' });
+});
 
 app.listen(PORT, () => {
   console.log(`Elkris CSR Reporting running at http://localhost:${PORT}`);

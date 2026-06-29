@@ -1,164 +1,290 @@
-const Database = require('better-sqlite3');
+const mysql = require('mysql2/promise');
 const path = require('path');
+require('dotenv').config();
 
-const dbPath = path.resolve(process.env.DB_PATH || './data/elkris.db');
-const db = new Database(dbPath);
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_PORT = process.env.DB_PORT || 3306;
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '';
+const DB_NAME = process.env.DB_NAME || 'elkris_csr';
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+const pool = mysql.createPool({
+  host: DB_HOST,
+  port: DB_PORT,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  namedPlaceholders: true,
+  timezone: '+00:00'
+});
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    fullName TEXT NOT NULL,
-    phoneNumber TEXT,
-    address TEXT,
-    role TEXT NOT NULL DEFAULT 'csr',
-    zone TEXT,
-    state TEXT,
-    lga TEXT,
-    isActive INTEGER NOT NULL DEFAULT 1,
-    theme TEXT DEFAULT 'light',
-    removedBy INTEGER,
-    removedAt TEXT,
-    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (removedBy) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    grammage TEXT NOT NULL,
-    createdBy INTEGER,
-    isActive INTEGER NOT NULL DEFAULT 1,
-    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (createdBy) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS target_tiers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    monthlyTarget INTEGER NOT NULL DEFAULT 0,
-    monthlySalary INTEGER NOT NULL DEFAULT 0,
-    createdBy INTEGER,
-    createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (createdBy) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS csr_tier (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    csrId INTEGER UNIQUE NOT NULL,
-    tierId INTEGER NOT NULL,
-    assignedAt TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (csrId) REFERENCES users(id),
-    FOREIGN KEY (tierId) REFERENCES target_tiers(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS csr_inventory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    csrId INTEGER NOT NULL,
-    productId INTEGER NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0,
-    lastUpdated TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (csrId) REFERENCES users(id),
-    FOREIGN KEY (productId) REFERENCES products(id),
-    UNIQUE(csrId, productId)
-  );
-
-  CREATE TABLE IF NOT EXISTS sales_entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    csrId INTEGER NOT NULL,
-    date TEXT NOT NULL,
-    isPresent INTEGER NOT NULL DEFAULT 1,
-    loggedBy INTEGER,
-    dayClosed INTEGER NOT NULL DEFAULT 0,
-    closedAt TEXT,
-    FOREIGN KEY (csrId) REFERENCES users(id),
-    FOREIGN KEY (loggedBy) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS sales_entry_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    entryId INTEGER NOT NULL,
-    productId INTEGER NOT NULL,
-    quantity INTEGER NOT NULL DEFAULT 0,
-    unitPrice INTEGER NOT NULL DEFAULT 0,
-    salesValue INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (entryId) REFERENCES sales_entries(id),
-    FOREIGN KEY (productId) REFERENCES products(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS payment_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    csrId INTEGER NOT NULL,
-    month TEXT NOT NULL,
-    totalSales INTEGER NOT NULL DEFAULT 0,
-    target INTEGER NOT NULL DEFAULT 0,
-    baseSalary INTEGER NOT NULL DEFAULT 0,
-    earnedPay INTEGER NOT NULL DEFAULT 0,
-    percentTarget INTEGER NOT NULL DEFAULT 0,
-    confirmedBy INTEGER,
-    confirmedAt TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (csrId) REFERENCES users(id),
-    FOREIGN KEY (confirmedBy) REFERENCES users(id),
-    UNIQUE(csrId, month)
-  );
-`);
-
-const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
-if (!userCols.includes('removedBy')) {
-  db.exec("ALTER TABLE users ADD COLUMN removedBy INTEGER REFERENCES users(id)");
-}
-if (!userCols.includes('removedAt')) {
-  db.exec("ALTER TABLE users ADD COLUMN removedAt TEXT");
-}
-
-function seed() {
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-  if (userCount > 0) return;
-
-  const insertUser = db.prepare(`
-    INSERT INTO users (username, email, password, fullName, phoneNumber, address, role, zone, state, lga, isActive, theme, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-
-  const users = [
-    ['admin', 'admin@elkris.com', 'admin123', 'System Administrator', '08012345678', '', 'admin', 'North Central', 'FCT', 'Abuja Municipal', 1, 'light', '2026-01-01T00:00:00.000Z'],
-    ['supervisor1', 'grace.okonkwo@elkris.com', 'super123', 'Grace Okonkwo', '08023456789', '', 'supervisor', 'South East', 'Enugu', 'Enugu North', 1, 'light', '2026-01-15T08:30:00.000Z'],
-    ['manager1', 'emeka.nwosu@elkris.com', 'manager123', 'Emeka Nwosu', '08034567890', '', 'manager', 'South South', 'Rivers', 'Port Harcourt', 1, 'light', '2026-02-01T10:00:00.000Z'],
-    ['csr1', 'amina.bello@elkris.com', 'csr123', 'Amina Bello', '08045678901', '12 Kano Road, Kano Municipal', 'csr', 'North West', 'Kano', 'Kano Municipal', 1, 'light', '2026-03-10T09:00:00.000Z'],
-    ['csr2', 'tunde.adeyemi@elkris.com', 'csr123', 'Tunde Adeyemi', '08056789012', '5 Lagos Avenue, Ikeja', 'csr', 'South West', 'Lagos', 'Ikeja', 1, 'dark', '2026-03-12T09:00:00.000Z'],
-  ];
-
-  const insertMany = db.transaction(() => {
-    for (const u of users) insertUser.run(...u);
+async function ensureDatabase() {
+  const conn = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    timezone: '+00:00'
   });
-  insertMany();
-
-  const insertProduct = db.prepare("INSERT INTO products (name, grammage, createdBy, isActive, createdAt) VALUES (?, ?, 1, 1, '2026-01-01T00:00:00.000Z')");
-  const products = [['Elkris Premium Oats', '500g'], ['Elkris Premium Oats', '1kg'], ['Elkris Corn Flakes', '300g'], ['Elkris Corn Flakes', '750g'], ['Elkris Honey Wheat', '500g']];
-  db.transaction(() => { for (const p of products) insertProduct.run(...p); })();
-
-  const insertTier = db.prepare("INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES (?, ?, ?, 2, '2026-01-01T00:00:00.000Z')");
-  insertTier.run('Tier 1 - Starter', 500000, 80000);
-  insertTier.run('Tier 2 - Growth', 1000000, 120000);
-  insertTier.run('Tier 3 - Premium', 2000000, 180000);
-
-  db.prepare('INSERT INTO csr_tier (csrId, tierId) VALUES (?, ?)').run(4, 1);
-  db.prepare('INSERT INTO csr_tier (csrId, tierId) VALUES (?, ?)').run(5, 2);
-
-  const insertInv = db.prepare("INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (?, ?, ?, '2026-06-01T08:00:00.000Z')");
-  insertInv.run(4, 1, 200); insertInv.run(4, 3, 150); insertInv.run(5, 2, 180); insertInv.run(5, 4, 120);
-
-  const insEntry = db.prepare("INSERT INTO sales_entries (csrId, date, isPresent, loggedBy, dayClosed) VALUES (?, ?, 1, 2, 1)");
-  insEntry.run(4, '2026-06-26'); insEntry.run(5, '2026-06-26');
-  const insItem = db.prepare("INSERT INTO sales_entry_items (entryId, productId, quantity, unitPrice, salesValue) VALUES (?, ?, ?, ?, ?)");
-  insItem.run(1, 1, 40, 2500, 100000); insItem.run(2, 2, 50, 4500, 225000);
+  await conn.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await conn.end();
 }
 
-seed();
+async function initSchema() {
+  const conn = await pool.getConnection();
+  try {
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        fullName VARCHAR(255) NOT NULL,
+        phoneNumber VARCHAR(50),
+        address TEXT,
+        role VARCHAR(50) NOT NULL DEFAULT 'csr',
+        zone VARCHAR(100),
+        state VARCHAR(100),
+        lga VARCHAR(100),
+        isActive TINYINT NOT NULL DEFAULT 1,
+        theme VARCHAR(20) DEFAULT 'light',
+        removedBy INT,
+        removedAt DATETIME,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (removedBy) REFERENCES users(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        grammage VARCHAR(100) NOT NULL,
+        createdBy INT,
+        isActive TINYINT NOT NULL DEFAULT 1,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (createdBy) REFERENCES users(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS target_tiers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        monthlyTarget INT NOT NULL DEFAULT 0,
+        monthlySalary INT NOT NULL DEFAULT 0,
+        createdBy INT,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (createdBy) REFERENCES users(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS csr_tier (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        csrId INT UNIQUE NOT NULL,
+        tierId INT NOT NULL,
+        assignedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (csrId) REFERENCES users(id),
+        FOREIGN KEY (tierId) REFERENCES target_tiers(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS csr_inventory (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        csrId INT NOT NULL,
+        productId INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (csrId) REFERENCES users(id),
+        FOREIGN KEY (productId) REFERENCES products(id),
+        UNIQUE KEY unique_csr_product (csrId, productId)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS sales_entries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        csrId INT NOT NULL,
+        date DATE NOT NULL,
+        isPresent TINYINT NOT NULL DEFAULT 1,
+        loggedBy INT,
+        dayClosed TINYINT NOT NULL DEFAULT 0,
+        closedAt DATETIME,
+        FOREIGN KEY (csrId) REFERENCES users(id),
+        FOREIGN KEY (loggedBy) REFERENCES users(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS sales_entry_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        entryId INT NOT NULL,
+        productId INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        unitPrice INT NOT NULL DEFAULT 0,
+        salesValue INT NOT NULL DEFAULT 0,
+        FOREIGN KEY (entryId) REFERENCES sales_entries(id),
+        FOREIGN KEY (productId) REFERENCES products(id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS payment_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        csrId INT NOT NULL,
+        month VARCHAR(7) NOT NULL,
+        totalSales INT NOT NULL DEFAULT 0,
+        target INT NOT NULL DEFAULT 0,
+        baseSalary INT NOT NULL DEFAULT 0,
+        earnedPay INT NOT NULL DEFAULT 0,
+        percentTarget INT NOT NULL DEFAULT 0,
+        confirmedBy INT,
+        confirmedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (csrId) REFERENCES users(id),
+        FOREIGN KEY (confirmedBy) REFERENCES users(id),
+        UNIQUE KEY unique_csr_month (csrId, month)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    const [userCols] = await conn.query("SHOW COLUMNS FROM users LIKE 'removedBy'");
+    if (userCols.length === 0) {
+      await conn.query("ALTER TABLE users ADD COLUMN removedBy INT, ADD FOREIGN KEY (removedBy) REFERENCES users(id)");
+    }
+    const [removedAtCols] = await conn.query("SHOW COLUMNS FROM users LIKE 'removedAt'");
+    if (removedAtCols.length === 0) {
+      await conn.query("ALTER TABLE users ADD COLUMN removedAt DATETIME");
+    }
+  } finally {
+    conn.release();
+  }
+}
+
+async function seed() {
+  const conn = await pool.getConnection();
+  try {
+    const [rows] = await conn.query('SELECT COUNT(*) as count FROM users');
+    if (rows[0].count > 0) return;
+
+    const users = [
+      ['admin', 'admin@elkris.com', 'admin123', 'System Administrator', '08012345678', '', 'admin', 'North Central', 'FCT', 'Abuja Municipal', 1, 'light', '2026-01-01 00:00:00'],
+      ['supervisor1', 'grace.okonkwo@elkris.com', 'super123', 'Grace Okonkwo', '08023456789', '', 'supervisor', 'South East', 'Enugu', 'Enugu North', 1, 'light', '2026-01-15 08:30:00'],
+      ['manager1', 'emeka.nwosu@elkris.com', 'manager123', 'Emeka Nwosu', '08034567890', '', 'manager', 'South South', 'Rivers', 'Port Harcourt', 1, 'light', '2026-02-01 10:00:00'],
+      ['csr1', 'amina.bello@elkris.com', 'csr123', 'Amina Bello', '08045678901', '12 Kano Road, Kano Municipal', 'csr', 'North West', 'Kano', 'Kano Municipal', 1, 'light', '2026-03-10 09:00:00'],
+      ['csr2', 'tunde.adeyemi@elkris.com', 'csr123', 'Tunde Adeyemi', '08056789012', '5 Lagos Avenue, Ikeja', 'csr', 'South West', 'Lagos', 'Ikeja', 1, 'dark', '2026-03-12 09:00:00'],
+    ];
+
+    for (const u of users) {
+      await conn.query(
+        `INSERT INTO users (username, email, password, fullName, phoneNumber, address, role, zone, state, lga, isActive, theme, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        u
+      );
+    }
+
+    const products = [
+      ['Elkris Premium Oats', '500g'],
+      ['Elkris Premium Oats', '1kg'],
+      ['Elkris Corn Flakes', '300g'],
+      ['Elkris Corn Flakes', '750g'],
+      ['Elkris Honey Wheat', '500g'],
+    ];
+    for (const p of products) {
+      await conn.query(
+        `INSERT INTO products (name, grammage, createdBy, isActive, createdAt) VALUES (?, ?, 1, 1, '2026-01-01 00:00:00')`,
+        p
+      );
+    }
+
+    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 1 - Starter', 500000, 80000, 2, '2026-01-01 00:00:00')`);
+    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 2 - Growth', 1000000, 120000, 2, '2026-01-01 00:00:00')`);
+    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 3 - Premium', 2000000, 180000, 2, '2026-01-01 00:00:00')`);
+
+    await conn.query(`INSERT INTO csr_tier (csrId, tierId) VALUES (4, 1)`);
+    await conn.query(`INSERT INTO csr_tier (csrId, tierId) VALUES (5, 2)`);
+
+    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (4, 1, 200, '2026-06-01 08:00:00')`);
+    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (4, 3, 150, '2026-06-01 08:00:00')`);
+    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (5, 2, 180, '2026-06-01 08:00:00')`);
+    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (5, 4, 120, '2026-06-01 08:00:00')`);
+
+    const [r1] = await conn.query(`INSERT INTO sales_entries (csrId, date, isPresent, loggedBy, dayClosed) VALUES (4, '2026-06-26', 1, 2, 1)`);
+    const [r2] = await conn.query(`INSERT INTO sales_entries (csrId, date, isPresent, loggedBy, dayClosed) VALUES (5, '2026-06-26', 1, 2, 1)`);
+
+    await conn.query(`INSERT INTO sales_entry_items (entryId, productId, quantity, unitPrice, salesValue) VALUES (?, 1, 40, 2500, 100000)`, [r1.insertId]);
+    await conn.query(`INSERT INTO sales_entry_items (entryId, productId, quantity, unitPrice, salesValue) VALUES (?, 2, 50, 4500, 225000)`, [r2.insertId]);
+  } finally {
+    conn.release();
+  }
+}
+
+async function init() {
+  await ensureDatabase();
+  await initSchema();
+  await seed();
+}
+
+init().catch(err => {
+  console.error('Database initialization failed:', err);
+  process.exit(1);
+});
+
+function makeExecutor(execFn) {
+  return {
+    prepare: (sql) => ({
+      all: async (...params) => {
+        const [rows] = await execFn(sql, params);
+        return rows;
+      },
+      get: async (...params) => {
+        const [rows] = await execFn(sql, params);
+        return rows[0];
+      },
+      run: async (...params) => {
+        const [result] = await execFn(sql, params);
+        return {
+          lastInsertRowid: result.insertId,
+          changes: result.affectedRows
+        };
+      }
+    })
+  };
+}
+
+const poolExecutor = (sql, params) => pool.execute(sql, params);
+
+const db = {
+  ...makeExecutor(poolExecutor),
+  async transaction(fn) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const connExecutor = (sql, params) => conn.execute(sql, params);
+      const txDb = makeExecutor(connExecutor);
+      const result = await fn(txDb);
+      await conn.commit();
+      return result;
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  },
+  exec: async (sql) => {
+    const statements = sql.split(';').filter(s => s.trim());
+    for (const stmt of statements) {
+      await pool.execute(stmt);
+    }
+  },
+  pragma: async () => {},
+  close: async () => {
+    await pool.end();
+  }
+};
 
 module.exports = db;

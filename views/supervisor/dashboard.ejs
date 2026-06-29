@@ -11,7 +11,7 @@
     <% } %>
 
     <div class="flex justify-between items-center mb-6">
-      <h3 class="text-lg font-semibold">CSR Overview - <%= today %></h3>
+      <h3 class="text-lg font-semibold"><%= today %></h3>
       <div class="flex gap-2">
         <% if (!dayClosed) { %>
         <form action="/supervisor/day/close" method="POST" onsubmit="return confirm('Close day for all CSRs? CSRs without entries will be marked absent.')">
@@ -20,12 +20,105 @@
           <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded-lg">Close Day</button>
         </form>
         <% } else { %>
-          <span class="bg-green-100 text-green-700 text-sm font-medium py-2 px-4 rounded-lg">Day Closed</span>
+        <form action="/supervisor/day/reopen" method="POST" onsubmit="return confirm('Reopen the day? CSRs will be able to log sales again.')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="date" value="<%= today %>">
+          <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-2 px-4 rounded-lg">Reopen Day</button>
+        </form>
         <% } %>
-        <button type="button" onclick="document.getElementById('bulkPayDashForm2').submit()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg" onclick="return confirm('Pay selected CSRs for <%= today.substring(0, 7) %>?')">Pay Selected</button>
       </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Log Daily Sales</h3>
+        <% if (dayClosed) { %>
+          <div class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 p-3 rounded-lg text-sm mb-4">Day is closed. No further entries can be logged.</div>
+        <% } %>
+        <form action="/supervisor/sales/log" method="POST" class="space-y-4">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div>
+            <label class="block text-sm font-medium mb-1">CSR / Stockist</label>
+            <select name="csrId" class="form-input" required id="csrSelect" <%= dayClosed ? 'disabled' : '' %>>
+              <option value="">Select CSR</option>
+              <% csrs.forEach(c => { %>
+                <option value="<%= c.id %>"><%= c.fullName %> (<%= c.phoneNumber || 'N/A' %>)</option>
+              <% }) %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Date</label>
+            <input type="date" name="date" class="form-input" required value="<%= today %>" <%= dayClosed ? 'disabled' : '' %>>
+          </div>
+          <div class="flex items-center gap-2 mb-2">
+            <input type="checkbox" name="isPresent" id="isPresent" class="w-4 h-4" checked <%= dayClosed ? 'disabled' : '' %>>
+            <label for="isPresent" class="text-sm font-medium">CSR Present Today</label>
+          </div>
+          <div class="border rounded-lg p-3">
+            <div class="flex justify-between items-center mb-2">
+              <label class="text-sm font-medium">Products Sold</label>
+              <button type="button" onclick="addProductRow()" class="text-xs text-blue-600 hover:underline" <%= dayClosed ? 'disabled' : '' %>>+ Add Product</button>
+            </div>
+            <div id="productRows" class="space-y-2">
+              <div class="flex gap-2 items-end product-row">
+                <select name="productIds" class="form-input text-sm flex-1 product-select" required <%= dayClosed ? 'disabled' : '' %>>
+                  <option value="">Select Product</option>
+                  <% products.forEach(p => { %>
+                    <option value="<%= p.id %>"><%= p.name %> (<%= p.grammage %>)</option>
+                  <% }) %>
+                </select>
+                <input type="number" name="quantities" min="1" class="form-input text-sm w-20 qty-input" placeholder="Qty" required <%= dayClosed ? 'disabled' : '' %>>
+                <input type="number" name="unitPrices" min="0" class="form-input text-sm w-28 price-input" placeholder="Unit Price" required <%= dayClosed ? 'disabled' : '' %>>
+                <input type="text" class="form-input text-sm w-28 value-display" readonly placeholder="Value">
+                <button type="button" onclick="removeProductRow(this)" class="text-red-500 hover:text-red-700 text-sm px-1">&times;</button>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary" <%= dayClosed ? 'disabled' : '' %>>Log Entry</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3 class="font-semibold text-brand mb-4">Today's Entries</h3>
+        <div class="max-h-80 overflow-y-auto">
+          <table>
+            <thead>
+              <tr class="text-xs text-secondary border-b">
+                <th>CSR</th>
+                <th>Phone</th>
+                <th>State</th>
+                <th>Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% csrData.forEach(c => { %>
+              <tr class="text-sm">
+                <td class="font-medium"><%= c.fullName %></td>
+                <td><%= c.phoneNumber || 'N/A' %></td>
+                <td><%= c.state || 'N/A' %></td>
+                <td>
+                  <% if (c.isPresent) { %>
+                    <span class="text-green-600">Yes</span>
+                    <% if (c.todayItems.length > 0) { %>
+                      <div class="text-xs text-secondary mt-1">
+                        <% c.todayItems.forEach(item => { %>
+                          <div><%= item.productName %> (<%= item.productGrammage %>): <%= item.quantity %> x &#8358;<%= item.unitPrice.toLocaleString() %> = &#8358;<%= item.salesValue.toLocaleString() %></div>
+                        <% }) %>
+                        <div class="font-semibold">Total: &#8358;<%= c.todayValue.toLocaleString() %></div>
+                      </div>
+                    <% } %>
+                  <% } else { %>
+                    <span class="text-red-600">No</span>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="text-lg font-semibold mb-4">CSR Overview</h3>
     <form action="/supervisor/payment/bulk" method="POST" id="bulkPayDashForm2">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <input type="hidden" name="month" value="<%= today.substring(0, 7) %>">
@@ -77,91 +170,8 @@
         <% }) %>
       </div>
     </form>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="card">
-        <h3 class="font-semibold text-brand mb-4">Log Daily Sales</h3>
-        <form action="/supervisor/sales/log" method="POST" class="space-y-4">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div>
-            <label class="block text-sm font-medium mb-1">CSR / Stockist</label>
-            <select name="csrId" class="form-input" required id="csrSelect">
-              <option value="">Select CSR</option>
-              <% csrs.forEach(c => { %>
-                <option value="<%= c.id %>"><%= c.fullName %> (<%= c.phoneNumber || 'N/A' %>)</option>
-              <% }) %>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium mb-1">Date</label>
-            <input type="date" name="date" class="form-input" required value="<%= today %>">
-          </div>
-          <div class="flex items-center gap-2 mb-2">
-            <input type="checkbox" name="isPresent" id="isPresent" class="w-4 h-4" checked>
-            <label for="isPresent" class="text-sm font-medium">CSR Present Today</label>
-          </div>
-          <div class="border rounded-lg p-3">
-            <div class="flex justify-between items-center mb-2">
-              <label class="text-sm font-medium">Products Sold</label>
-              <button type="button" onclick="addProductRow()" class="text-xs text-blue-600 hover:underline">+ Add Product</button>
-            </div>
-            <div id="productRows" class="space-y-2">
-              <div class="flex gap-2 items-end product-row">
-                <select name="productIds" class="form-input text-sm flex-1 product-select" required>
-                  <option value="">Select Product</option>
-                  <% products.forEach(p => { %>
-                    <option value="<%= p.id %>"><%= p.name %> (<%= p.grammage %>)</option>
-                  <% }) %>
-                </select>
-                <input type="number" name="quantities" min="1" class="form-input text-sm w-20 qty-input" placeholder="Qty" required>
-                <input type="number" name="unitPrices" min="0" class="form-input text-sm w-28 price-input" placeholder="Unit Price" required>
-                <input type="text" class="form-input text-sm w-28 value-display" readonly placeholder="Value">
-                <button type="button" onclick="removeProductRow(this)" class="text-red-500 hover:text-red-700 text-sm px-1">&times;</button>
-              </div>
-            </div>
-          </div>
-          <button type="submit" class="btn-primary">Log Entry</button>
-        </form>
-      </div>
-      <div class="card">
-        <h3 class="font-semibold text-brand mb-4">Today's Entries</h3>
-        <div class="max-h-80 overflow-y-auto">
-          <table>
-            <thead>
-              <tr class="text-xs text-secondary border-b">
-                <th>CSR</th>
-                <th>Phone</th>
-                <th>State</th>
-                <th>Present</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% csrData.forEach(c => { %>
-              <tr class="text-sm">
-                <td class="font-medium"><%= c.fullName %></td>
-                <td><%= c.phoneNumber || 'N/A' %></td>
-                <td><%= c.state || 'N/A' %></td>
-                <td>
-                  <% if (c.isPresent) { %>
-                    <span class="text-green-600">Yes</span>
-                    <% if (c.todayItems.length > 0) { %>
-                      <div class="text-xs text-secondary mt-1">
-                        <% c.todayItems.forEach(item => { %>
-                          <div><%= item.productName %> (<%= item.productGrammage %>): <%= item.quantity %> x &#8358;<%= item.unitPrice.toLocaleString() %> = &#8358;<%= item.salesValue.toLocaleString() %></div>
-                        <% }) %>
-                        <div class="font-semibold">Total: &#8358;<%= c.todayValue.toLocaleString() %></div>
-                      </div>
-                    <% } %>
-                  <% } else { %>
-                    <span class="text-red-600">No</span>
-                  <% } %>
-                </td>
-              </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div class="flex justify-end mb-6">
+      <button type="button" onclick="document.getElementById('bulkPayDashForm2').submit()" class="bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded-lg">Pay Selected</button>
     </div>
   </main>
 </div>
