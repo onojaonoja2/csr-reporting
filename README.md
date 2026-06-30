@@ -63,15 +63,11 @@ npm run dev      # development (with nodemon)
 
 The database, tables, and seed data are created automatically on first startup.
 
-## Default Accounts
+## Default Account
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@elkris.com | admin123 |
-| Supervisor | grace.okonkwo@elkris.com | super123 |
-| Manager | emeka.nwosu@elkris.com | manager123 |
-| CSR | amina.bello@elkris.com | csr123 |
-| CSR | tunde.adeyemi@elkris.com | csr123 |
+| Admin | elkristech@gmail.com | Repo34j8723 |
 
 ## Features
 

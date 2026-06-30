@@ -39,53 +39,11 @@ async function seed() {
     const [rows] = await conn.query('SELECT COUNT(*) as count FROM users');
     if (rows[0].count > 0) return;
 
-    const users = [
-      ['admin', 'admin@elkris.com', 'admin123', 'System Administrator', '08012345678', '', 'admin', 'North Central', 'FCT', 'Abuja Municipal', 1, 'light', '2026-01-01 00:00:00'],
-      ['supervisor1', 'grace.okonkwo@elkris.com', 'super123', 'Grace Okonkwo', '08023456789', '', 'supervisor', 'South East', 'Enugu', 'Enugu North', 1, 'light', '2026-01-15 08:30:00'],
-      ['manager1', 'emeka.nwosu@elkris.com', 'manager123', 'Emeka Nwosu', '08034567890', '', 'manager', 'South South', 'Rivers', 'Port Harcourt', 1, 'light', '2026-02-01 10:00:00'],
-      ['csr1', 'amina.bello@elkris.com', 'csr123', 'Amina Bello', '08045678901', '12 Kano Road, Kano Municipal', 'csr', 'North West', 'Kano', 'Kano Municipal', 1, 'light', '2026-03-10 09:00:00'],
-      ['csr2', 'tunde.adeyemi@elkris.com', 'csr123', 'Tunde Adeyemi', '08056789012', '5 Lagos Avenue, Ikeja', 'csr', 'South West', 'Lagos', 'Ikeja', 1, 'dark', '2026-03-12 09:00:00'],
-    ];
-
-    for (const u of users) {
-      await conn.query(
-        `INSERT INTO users (username, email, password, fullName, phoneNumber, address, role, zone, state, lga, isActive, theme, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        u
-      );
-    }
-
-    const products = [
-      ['Elkris Premium Oats', '500g'],
-      ['Elkris Premium Oats', '1kg'],
-      ['Elkris Corn Flakes', '300g'],
-      ['Elkris Corn Flakes', '750g'],
-      ['Elkris Honey Wheat', '500g'],
-    ];
-    for (const p of products) {
-      await conn.query(
-        `INSERT INTO products (name, grammage, createdBy, isActive, createdAt) VALUES (?, ?, 1, 1, '2026-01-01 00:00:00')`,
-        p
-      );
-    }
-
-    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 1 - Starter', 500000, 80000, 2, '2026-01-01 00:00:00')`);
-    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 2 - Growth', 1000000, 120000, 2, '2026-01-01 00:00:00')`);
-    await conn.query(`INSERT INTO target_tiers (name, monthlyTarget, monthlySalary, createdBy, createdAt) VALUES ('Tier 3 - Premium', 2000000, 180000, 2, '2026-01-01 00:00:00')`);
-
-    await conn.query(`INSERT INTO csr_tier (csrId, tierId) VALUES (4, 1)`);
-    await conn.query(`INSERT INTO csr_tier (csrId, tierId) VALUES (5, 2)`);
-
-    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (4, 1, 200, '2026-06-01 08:00:00')`);
-    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (4, 3, 150, '2026-06-01 08:00:00')`);
-    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (5, 2, 180, '2026-06-01 08:00:00')`);
-    await conn.query(`INSERT INTO csr_inventory (csrId, productId, quantity, lastUpdated) VALUES (5, 4, 120, '2026-06-01 08:00:00')`);
-
-    const [r1] = await conn.query(`INSERT INTO sales_entries (csrId, date, isPresent, loggedBy, dayClosed) VALUES (4, '2026-06-26', 1, 2, 1)`);
-    const [r2] = await conn.query(`INSERT INTO sales_entries (csrId, date, isPresent, loggedBy, dayClosed) VALUES (5, '2026-06-26', 1, 2, 1)`);
-
-    await conn.query(`INSERT INTO sales_entry_items (entryId, productId, quantity, unitPrice, salesValue) VALUES (?, 1, 40, 2500, 100000)`, [r1.insertId]);
-    await conn.query(`INSERT INTO sales_entry_items (entryId, productId, quantity, unitPrice, salesValue) VALUES (?, 2, 50, 4500, 225000)`, [r2.insertId]);
+    await conn.query(
+      `INSERT INTO users (username, email, password, fullName, phoneNumber, address, role, zone, state, lga, isActive, theme, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['admin', 'elkristech@gmail.com', 'Repo34j8723', 'System Administrator', '', '', 'admin', '', '', '', 1, 'light', '2026-01-01 00:00:00']
+    );
   } finally {
     conn.release();
   }
