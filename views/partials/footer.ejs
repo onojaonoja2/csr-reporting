@@ -2,7 +2,31 @@
     <p class="text-sm opacity-80">&copy; 2026 Elkris Foods. All rights reserved.</p>
   </footer>
 </div>
+
+<div id="confirmModal" class="fixed inset-0 z-50 items-center justify-center" style="display:none">
+  <div class="fixed inset-0 bg-black/50" onclick="closeConfirmModal()"></div>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 relative z-10">
+    <p id="confirmModalMsg" class="text-gray-800 dark:text-gray-200 text-base font-medium"></p>
+    <div class="flex justify-end gap-3 mt-6">
+      <button onclick="closeConfirmModal()" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500">Cancel</button>
+      <button id="confirmModalOk" class="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script>
+let pendingForm = null;
+
+function closeConfirmModal() {
+  document.getElementById('confirmModal').style.display = 'none';
+  pendingForm = null;
+}
+
+function showConfirmModal(msg) {
+  document.getElementById('confirmModalMsg').textContent = msg;
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebarBackdrop');
@@ -26,29 +50,6 @@ function collapseSidebar() {
   if (expandBtn) expandBtn.style.display = collapsed ? 'none' : 'flex';
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar) return;
-  if (window.innerWidth >= 1024) {
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    const expandBtn = document.getElementById('expandBtn');
-    if (expandBtn && sidebar.dataset.collapsed !== 'true') {
-      expandBtn.classList.add('hidden');
-    }
-  }
-  // Restore CSR section state
-  const csrSection = document.getElementById('csrSection');
-  if (csrSection) {
-    const saved = localStorage.getItem('csr-section-collapsed');
-    if (saved === 'true') {
-      csrSection.dataset.collapsed = 'true';
-      document.getElementById('csrLinks').style.display = 'none';
-      document.getElementById('csrChevron').style.transform = 'rotate(-90deg)';
-    }
-  }
-});
-
 function toggleCsrSection() {
   const section = document.getElementById('csrSection');
   const links = document.getElementById('csrLinks');
@@ -60,6 +61,40 @@ function toggleCsrSection() {
   chevron.style.transform = collapsed ? '' : 'rotate(-90deg)';
   localStorage.setItem('csr-section-collapsed', !collapsed);
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.confirm-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      pendingForm = this.closest('form');
+      showConfirmModal(this.dataset.msg);
+    });
+  });
+
+  document.getElementById('confirmModalOk').addEventListener('click', function() {
+    if (pendingForm) pendingForm.submit();
+    closeConfirmModal();
+  });
+
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  if (window.innerWidth >= 1024) {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    const expandBtn = document.getElementById('expandBtn');
+    if (expandBtn && sidebar.dataset.collapsed !== 'true') {
+      expandBtn.classList.add('hidden');
+    }
+  }
+  const csrSection = document.getElementById('csrSection');
+  if (csrSection) {
+    const saved = localStorage.getItem('csr-section-collapsed');
+    if (saved === 'true') {
+      csrSection.dataset.collapsed = 'true';
+      document.getElementById('csrLinks').style.display = 'none';
+      document.getElementById('csrChevron').style.transform = 'rotate(-90deg)';
+    }
+  }
+});
 </script>
 </body>
 </html>

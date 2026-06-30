@@ -29,8 +29,25 @@ async function getCsrPayData(csrId, monthPrefix) {
   return { ...sales, monthlySales: sales.totalValue, totalSales: sales.totalValue, tierName: tierRow ? tierRow.name : 'Unassigned', target, baseSalary, percentTarget, earnedPay, isPaid: !!paid };
 }
 
+async function isMonthArchived(month) {
+  const row = await db.prepare('SELECT id FROM archived_months WHERE month = ?').get(month);
+  return !!row;
+}
+
+async function autoArchivePreviousMonth() {
+  const currentMonth = new Date().toISOString().substring(0, 7);
+  const lastEntry = await db.prepare("SELECT DISTINCT DATE_FORMAT(date, '%Y-%m') as m FROM sales_entries ORDER BY m DESC LIMIT 1").get();
+  if (!lastEntry) return;
+  if (lastEntry.m >= currentMonth) return;
+  const alreadyArchived = await isMonthArchived(lastEntry.m);
+  if (alreadyArchived) return;
+  await db.prepare('INSERT INTO archived_months (month, archivedBy, archivedAt) VALUES (?, 0, NOW())').run(lastEntry.m);
+}
+
 router.get('/dashboard', async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
+  await autoArchivePreviousMonth();
+  const currentMonthArchived = await isMonthArchived(today.substring(0, 7));
   const csrs = await db.prepare("SELECT * FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
   const products = await db.prepare("SELECT * FROM products WHERE isActive = 1 ORDER BY name").all();
 
@@ -58,14 +75,17 @@ router.get('/dashboard', async (req, res) => {
     allDaysClosed = openCount.cnt === 0 && totalCount.cnt > 0;
   }
 
-  res.render('supervisor/dashboard', { csrs, csrData, products, today, dayClosed: allDaysClosed, user: req.session.user, success: req.query.success || null, error: req.query.error || null });
+  res.render('supervisor/dashboard', { csrs, csrData, products, today, dayClosed: allDaysClosed, currentMonthArchived, user: req.session.user, success: req.query.success || null, error: req.query.error || null });
 });
 
 router.post('/sales/log', async (req, res) => {
   const { csrId, date, isPresent, productIds, quantities, unitPrices } = req.body;
   const csrIdInt = parseInt(csrId);
+  const month = date.substring(0, 7);
 
   try {
+    if (await isMonthArchived(month)) return res.redirect('/supervisor/dashboard?error=Month+is+archived.+Cannot+log+entries.');
+
     const existingEntry = await db.prepare("SELECT id, dayClosed FROM sales_entries WHERE csrId = ? AND date = ?").get(csrIdInt, date);
     if (existingEntry && existingEntry.dayClosed) return res.redirect('/supervisor/dashboard?error=Day+is+closed.+Cannot+log+entries.');
 
@@ -117,6 +137,9 @@ router.post('/sales/log', async (req, res) => {
 router.post('/day/close', async (req, res) => {
   try {
     const { date } = req.body;
+    const month = date.substring(0, 7);
+    if (await isMonthArchived(month)) return res.redirect('/supervisor/dashboard?error=Month+is+archived.+Cannot+close+days.');
+
     const csrs = await db.prepare("SELECT id FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
     await db.transaction(async (tx) => {
       for (const csr of csrs) {
@@ -138,6 +161,9 @@ router.post('/day/close', async (req, res) => {
 router.post('/day/reopen', async (req, res) => {
   try {
     const { date } = req.body;
+    const month = date.substring(0, 7);
+    if (await isMonthArchived(month)) return res.redirect('/supervisor/dashboard?error=Month+is+archived.+Cannot+reopen+days.');
+
     const csrs = await db.prepare("SELECT id FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
     await db.transaction(async (tx) => {
       for (const csr of csrs) {
@@ -150,6 +176,32 @@ router.post('/day/reopen', async (req, res) => {
     res.redirect('/supervisor/dashboard?success=Day+reopened+successfully');
   } catch (err) {
     res.redirect('/supervisor/dashboard?error=Failed+to+reopen+day');
+  }
+});
+
+router.post('/month/end', async (req, res) => {
+  try {
+    const { month } = req.body;
+    const m = month || new Date().toISOString().substring(0, 7);
+    const already = await isMonthArchived(m);
+    if (already) return res.redirect('/supervisor/dashboard?error=Month+already+archived.');
+    await db.prepare('INSERT INTO archived_months (month, archivedBy, archivedAt) VALUES (?, ?, NOW())').run(m, req.session.user.id);
+    res.redirect('/supervisor/dashboard?success=Month+archived+successfully');
+  } catch (err) {
+    res.redirect('/supervisor/dashboard?error=Failed+to+archive+month');
+  }
+});
+
+router.post('/month/open', async (req, res) => {
+  try {
+    const { month } = req.body;
+    const m = month || new Date().toISOString().substring(0, 7);
+    const existing = await db.prepare('SELECT id FROM archived_months WHERE month = ?').get(m);
+    if (!existing) return res.redirect('/supervisor/dashboard?error=Month+is+not+archived.');
+    await db.prepare('DELETE FROM archived_months WHERE month = ?').run(m);
+    res.redirect('/supervisor/dashboard?success=Month+reopened+successfully');
+  } catch (err) {
+    res.redirect('/supervisor/dashboard?error=Failed+to+reopen+month');
   }
 });
 
@@ -560,6 +612,7 @@ router.get('/activities', async (req, res) => {
     const weeklyData = [];
     for (const csr of csrs) {
       const entries = await db.prepare("SELECT * FROM sales_entries WHERE csrId = ? AND date >= ? AND date <= ?").all(csr.id, weekStart, weekEnd);
+      if (entries.length === 0) continue;
       const presentDays = entries.filter(e => e.isPresent).length;
       let totalValue = 0, totalUnits = 0;
       for (const e of entries) {
@@ -578,6 +631,7 @@ router.get('/activities', async (req, res) => {
     const monthlyData = [];
     for (const csr of csrs) {
       const payData = await getCsrPayData(csr.id, month);
+      if (payData.totalValue === 0 && payData.presentDays === 0) continue;
       monthlyData.push({ ...csr, ...payData });
     }
     const paidTotal = monthlyData.reduce((s, c) => s + c.earnedPay, 0);
@@ -589,6 +643,7 @@ router.get('/activities', async (req, res) => {
   const dailyData = [];
   for (const csr of csrs) {
     const entries = await db.prepare("SELECT * FROM sales_entries WHERE csrId = ? AND date = ?").all(csr.id, date);
+    if (entries.length === 0) continue;
     const isPresent = entries.some(e => e.isPresent);
     let totalValue = 0, totalUnits = 0, items = [];
     for (const e of entries) {

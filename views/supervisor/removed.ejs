@@ -46,7 +46,7 @@
               <form action="/supervisor/payment/confirm/<%= c.id %>" method="POST" class="inline">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <input type="hidden" name="month" value="<%= c.removedMonth %>">
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-3 rounded" onclick="return confirm('Mark payment of &#8358;<%= c.earnedPay.toLocaleString() %> as paid for <%= c.fullName %>?')">Mark Paid</button>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-3 rounded">Mark Paid</button>
               </form>
               <% } %>
             </td>

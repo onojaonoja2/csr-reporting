@@ -50,6 +50,7 @@ router.get('/daily', async (req, res) => {
   const dailyData = [];
   for (const csr of csrs) {
     const entries = await db.prepare("SELECT * FROM sales_entries WHERE csrId = ? AND date = ?").all(csr.id, date);
+    if (entries.length === 0) continue;
     const isPresent = entries.some(e => e.isPresent);
     let totalValue = 0, totalUnits = 0, items = [];
     for (const e of entries) {
@@ -85,6 +86,7 @@ router.get('/weekly', async (req, res) => {
   const weeklyData = [];
   for (const csr of csrs) {
     const entries = await db.prepare("SELECT * FROM sales_entries WHERE csrId = ? AND date >= ? AND date <= ?").all(csr.id, weekStart, weekEnd);
+    if (entries.length === 0) continue;
     const presentDays = entries.filter(e => e.isPresent).length;
     let totalValue = 0, totalUnits = 0;
     for (const e of entries) {
@@ -104,6 +106,7 @@ router.get('/monthly', async (req, res) => {
   const monthlyData = [];
   for (const csr of csrs) {
     const payData = await getCsrPayData(csr.id, month);
+    if (payData.totalValue === 0 && payData.presentDays === 0) continue;
     monthlyData.push({ ...csr, ...payData });
   }
   const paidTotal = monthlyData.reduce((s, c) => s + c.earnedPay, 0);

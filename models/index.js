@@ -22,6 +22,7 @@ const models = {
   SalesEntry: require('./salesentry')(sequelize),
   SalesEntryItem: require('./salesentryitem')(sequelize),
   PaymentHistory: require('./paymenthistory')(sequelize),
+  ArchivedMonth: require('./archivedmonth')(sequelize),
 };
 
 Object.values(models).forEach(model => {
