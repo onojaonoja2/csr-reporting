@@ -223,9 +223,9 @@
                 <% } %>
               </td>
               <td>
-                <form action="/supervisor/csr/remove/<%= c.id %>" method="POST" class="inline">
+                <form action="/supervisor/csr/remove/<%= c.id %>" method="POST" class="inline confirm-form">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="text-red-500 text-xs hover:underline" onclick="return confirm('Remove <%= c.fullName %>?')">Remove</button>
+                  <button type="button" class="text-red-500 text-xs hover:underline confirm-btn" data-msg="Remove <%= c.fullName %>?">Remove</button>
                 </form>
               </td>
             </tr>

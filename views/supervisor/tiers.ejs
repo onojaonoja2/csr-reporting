@@ -76,9 +76,9 @@
                 <input type="hidden" name="monthlyTarget" value="<%= t.monthlyTarget %>">
                 <input type="hidden" name="monthlySalary" value="<%= t.monthlySalary %>">
               </form>
-              <form action="/supervisor/tiers/<%= t.id %>/delete" method="POST" class="inline">
+              <form action="/supervisor/tiers/<%= t.id %>/delete" method="POST" class="inline confirm-form">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="text-red-600 text-xs hover:underline" onclick="return confirm('Delete this tier? CSRs assigned to it will be unassigned.')">Delete</button>
+                <button type="button" class="text-red-600 text-xs hover:underline confirm-btn" data-msg="Delete this tier? CSRs assigned to it will be unassigned.">Delete</button>
               </form>
             </td>
           </tr>

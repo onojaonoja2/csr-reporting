@@ -35,9 +35,9 @@
               <% } %>
             </td>
             <td>
-              <form action="/admin/products/<%= p.id %>/delete" method="POST" class="inline">
+              <form action="/admin/products/<%= p.id %>/delete" method="POST" class="inline confirm-form">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="text-red-600 text-xs hover:underline" onclick="return confirm('Permanently delete this product? This cannot be undone.')">Delete</button>
+                <button type="button" class="text-red-600 text-xs hover:underline confirm-btn" data-msg="Permanently delete this product? This cannot be undone.">Delete</button>
               </form>
             </td>
           </tr>

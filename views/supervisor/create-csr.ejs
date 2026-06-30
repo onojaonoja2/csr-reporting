@@ -84,9 +84,9 @@
 </div>
 <script>
 const zones = <%- JSON.stringify(zones) %>;
-const selectedZone = '<%= csr ? (csr.zone || '') : '' %>';
-const selectedState = '<%= csr ? (csr.state || '') : '' %>';
-const selectedLga = '<%= csr ? (csr.lga || '') : '' %>';
+let selectedZone = '<%= csr ? (csr.zone || '') : '' %>';
+let selectedState = '<%= csr ? (csr.state || '') : '' %>';
+let selectedLga = '<%= csr ? (csr.lga || '') : '' %>';
 
 function populateStates() {
   const zone = document.getElementById('zoneSelect').value;

@@ -38,9 +38,9 @@
             <td><%= w.totalUnits %></td>
             <td class="font-semibold">&#8358;<%= w.totalValue.toLocaleString() %></td>
             <td>
-              <form action="/manager/csr/remove/<%= w.id %>" method="POST" class="inline" onsubmit="return confirm('Remove <%= w.fullName %>?')">
+              <form action="/manager/csr/remove/<%= w.id %>" method="POST" class="inline confirm-form">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="text-red-500 text-xs hover:underline">Remove</button>
+                <button type="button" class="text-red-500 text-xs hover:underline confirm-btn" data-msg="Remove <%= w.fullName %>?">Remove</button>
               </form>
             </td>
           </tr>
