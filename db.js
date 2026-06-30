@@ -33,22 +33,6 @@ async function ensureDatabase() {
   await conn.end();
 }
 
-async function seed() {
-  const conn = await pool.getConnection();
-  try {
-    const [rows] = await conn.query('SELECT COUNT(*) as count FROM users');
-    if (rows[0].count > 0) return;
-
-    await conn.query(
-      `INSERT INTO users (username, email, password, fullName, phoneNumber, address, role, zone, state, lga, isActive, theme, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['admin', 'elkristech@gmail.com', 'Repo34j8723', 'System Administrator', '', '', 'admin', '', '', '', 1, 'light', '2026-01-01 00:00:00']
-    );
-  } finally {
-    conn.release();
-  }
-}
-
 function makeExecutor(execFn) {
   return {
     prepare: (sql) => ({
@@ -120,7 +104,6 @@ async function runMigrations() {
 async function init() {
   await ensureDatabase();
   await runMigrations();
-  await seed();
 }
 
 init().catch(err => {
