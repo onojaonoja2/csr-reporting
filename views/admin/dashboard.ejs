@@ -39,12 +39,25 @@
                 <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">Inactive</span>
               <% } %>
             </td>
-            <td class="space-x-2">
+            <td class="space-x-2 whitespace-nowrap">
               <a href="/admin/users/<%= u.id %>/edit" class="text-brand hover:underline text-sm font-medium">Edit</a>
-              <form action="/admin/users/<%= u.id %>/delete" method="POST" class="inline" onsubmit="return confirm('Delete this user?')">
+              <% if (u.role === 'supervisor' || u.role === 'manager') { %>
+              <form action="/admin/users/<%= u.id %>/delete" method="POST" class="inline confirm-form" onchange="this.querySelector('.confirm-btn').dataset.msg = this.querySelector('select').value ? 'Delete this user? Their data will be reassigned.' : 'Delete this user? Unassigned data (logged entries, created products, etc.) will be lost.'">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <button type="submit" class="text-red-600 hover:underline text-sm font-medium">Delete</button>
+                <select name="reassignTo" class="form-input text-xs py-0 px-1 w-28">
+                  <option value="">Reassign (optional)</option>
+                  <% users.filter(x => x.id !== u.id && x.isActive).forEach(x => { %>
+                    <option value="<%= x.id %>"><%= x.fullName %> (<%= x.role %>)</option>
+                  <% }) %>
+                </select>
+                <button type="button" class="text-red-600 hover:underline text-sm font-medium confirm-btn" data-msg="Delete this user? Unassigned data (logged entries, created products, etc.) will be lost.">Delete</button>
               </form>
+              <% } else { %>
+              <form action="/admin/users/<%= u.id %>/delete" method="POST" class="inline confirm-form">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="button" class="text-red-600 hover:underline text-sm font-medium confirm-btn" data-msg="Delete this user and all their data?">Delete</button>
+              </form>
+              <% } %>
             </td>
           </tr>
           <% }) %>

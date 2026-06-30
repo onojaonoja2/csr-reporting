@@ -104,13 +104,6 @@ router.post('/sales/log', async (req, res) => {
     }
 
     await db.transaction(async (tx) => {
-      for (const item of filtered) {
-        const inv = await tx.prepare('SELECT quantity FROM csr_inventory WHERE csrId = ? AND productId = ?').get(csrIdInt, item.pid);
-        if (!inv || inv.quantity < item.qty) {
-          throw new Error(`Insufficient inventory for product ID ${item.pid}`);
-        }
-      }
-
       let entry = existingEntry;
       if (!entry) {
         const result = await tx.prepare("INSERT INTO sales_entries (csrId, date, isPresent, loggedBy) VALUES (?, ?, ?, ?)").run(csrIdInt, date, isPresent === 'on' ? 1 : 0, req.session.user.id);
@@ -131,6 +124,34 @@ router.post('/sales/log', async (req, res) => {
   } catch (err) {
     const msg = encodeURIComponent(err.message || 'Failed to log sales');
     res.redirect(`/supervisor/dashboard?error=${msg}`);
+  }
+});
+
+router.post('/sales/present', async (req, res) => {
+  const { csrId } = req.body;
+  const date = new Date().toISOString().split('T')[0];
+  try {
+    if (csrId) {
+      const existing = await db.prepare("SELECT id FROM sales_entries WHERE csrId = ? AND date = ?").get(parseInt(csrId), date);
+      if (existing) {
+        await db.prepare("UPDATE sales_entries SET isPresent = 1 WHERE id = ?").run(existing.id);
+      } else {
+        await db.prepare("INSERT INTO sales_entries (csrId, date, isPresent, loggedBy) VALUES (?, ?, 1, ?)").run(parseInt(csrId), date, req.session.user.id);
+      }
+    } else {
+      const csrs = await db.prepare("SELECT id FROM users WHERE role = 'csr' AND isActive = 1 AND removedAt IS NULL").all();
+      for (const c of csrs) {
+        const existing = await db.prepare("SELECT id FROM sales_entries WHERE csrId = ? AND date = ?").get(c.id, date);
+        if (existing) {
+          await db.prepare("UPDATE sales_entries SET isPresent = 1 WHERE id = ?").run(existing.id);
+        } else {
+          await db.prepare("INSERT INTO sales_entries (csrId, date, isPresent, loggedBy) VALUES (?, ?, 1, ?)").run(c.id, date, req.session.user.id);
+        }
+      }
+    }
+    res.redirect('/supervisor/dashboard?success=Present+marked+successfully');
+  } catch (err) {
+    res.redirect('/supervisor/dashboard?error=Failed+to+mark+present');
   }
 });
 

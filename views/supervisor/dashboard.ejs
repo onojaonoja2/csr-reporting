@@ -24,6 +24,10 @@
           <button type="button" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium py-2 px-4 rounded-lg confirm-btn" data-msg="Reopen the current month? Sales entries can be logged again.">Open Month</button>
         </form>
         <% } %>
+        <form action="/supervisor/sales/present" method="POST" class="confirm-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg confirm-btn" data-msg="Mark all CSRs as present for today?">All Present</button>
+        </form>
         <% if (!dayClosed) { %>
         <form action="/supervisor/day/close" method="POST" class="confirm-form">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -98,6 +102,7 @@
                 <th>Phone</th>
                 <th>State</th>
                 <th>Present</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -119,6 +124,15 @@
                     <% } %>
                   <% } else { %>
                     <span class="text-red-600">No</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (!c.isPresent) { %>
+                  <form action="/supervisor/sales/present" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="csrId" value="<%= c.id %>">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded">Mark Present</button>
+                  </form>
                   <% } %>
                 </td>
               </tr>

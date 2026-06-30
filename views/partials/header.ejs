@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Elkris CSR Reporting</title>
+  <title>Elkris Reporting</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a365d'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-weight='bold' fill='white' font-family='Arial'%3EE%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/style.css">
   <script>
@@ -30,14 +31,13 @@
           <span class="text-brand font-bold text-lg">E</span>
         </div>
         <div>
-          <h1 class="text-lg font-bold leading-tight">Elkris CSR Reporting</h1>
-          <p class="text-xs opacity-80 hidden sm:block">Community Sales Representative Interface</p>
+          <h1 class="text-lg font-bold leading-tight">Elkris Reporting</h1>
+          <p class="text-xs opacity-80 hidden sm:block">Reporting Application</p>
         </div>
       </div>
       <div class="flex items-center gap-4">
         <% if (user) { %>
           <span class="text-sm font-medium hidden sm:inline"><%= user.fullName %></span>
-          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full uppercase tracking-wider"><%= user.role %></span>
           <a href="/profile" class="text-sm hover:underline">Profile</a>
           <a href="/logout" class="text-sm font-semibold px-3 py-1 rounded border border-white text-white hover:bg-white hover:text-[var(--accent)] transition">Logout</a>
         <% } else { %>
