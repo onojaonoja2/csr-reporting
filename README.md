@@ -63,12 +63,6 @@ npm run dev      # development (with nodemon)
 
 The database, tables, and seed data are created automatically on first startup.
 
-## Default Account
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | elkristech@gmail.com | Repo34j8723 |
-
 ## Features
 
 ### Daily Operations
